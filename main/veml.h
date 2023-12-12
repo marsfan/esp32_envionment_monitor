@@ -25,6 +25,49 @@
 #define VEML_WHITE_LEVEL_REG 0x05     ///< White level output register
 #define VEML_INTERRUPT_REG 0x06       ///< Interrupt status register
 
+// Enumerations of different configuration options
+
+/// @brief Possible gain values for the sensor.
+typedef enum {
+    VEML_GAIN_1 = 0x0,     ///< 1x gain
+    VEML_GAIN_2,           ///< 2x gain
+    VEML_GAIN_1_8,         ///< 1/8x gain
+    VEML_GAIN_1_4,         ///< 1/4x gain
+    VEML_NUM_GAIN_OPTIONS  ///< Total number of gain options
+} veml_gain_options_e;
+
+/// @brief Possible integration times for the sensor.
+typedef enum {
+    VEML_INTEGRATION_25 = 0b1100,     ///< 25ms integration time
+    VEML_INTEGRATION_50 = 0b1000,     ///< 50ms integration time
+    VEML_INTEGRATION_100 = 0b0000,    ///< 100ms integration time
+    VEML_INTEGRATION_200 = 0b0001,    ///< 200ms integration time
+    VEML_INTEGRATION_400 = 0b0010,    ///< 400ms integration time
+    VEML_INTEGRATION_800 = 0b0011,    ///< 800ms integration time
+    VEML_NUM_INTEGRATION_OPTIONS = 6  ///< Total number of integration options
+} veml_integration_options_e;
+
+/// @brief Possible persistence protection number.
+typedef enum {
+    VEML_PERSISTENCE_1 = 0x0,     ///< Persistence Protect 1
+    VEML_PERSISTENCE_2,           ///< Persistence Protect 2
+    VEML_PERSISTENCE_4,           ///< Persistence Protect 4
+    VEML_PERSISTENCE_8,           ///< Persistence Protect 8
+    VEML_NUM_PERSISTENCE_OPTIONS  ///< Total number of persistence protect
+                                  ///< options
+} veml_persistence_protect_options_e;
+
+/// @brief Enable/disable interrupt
+typedef enum {
+    VEML_INTERRUPT_DISABLE = 0x0,  ///< Disable ALS interrupt
+    VEML_INTERRUPT_ENABLE,         ///< Enable ALS Interrupt
+} veml_interrupt_options_e;
+
+/// @brief Enable/disable sensor
+typedef enum {
+    VEML_POWER_ON = 0x00,  ///< Turn on sensor
+    VEML_POWER_OFF,        ///< Turn off sensor
+} veml_power_options_e;
 // Definitions for registers that have bitwise configuration.
 
 /// @brief The configuration register (address 0x00)
