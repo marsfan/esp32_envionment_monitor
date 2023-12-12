@@ -46,7 +46,9 @@ extern "C" void app_main(void) {
     while (true) {
         uint16_t als_value = veml.get_ambient_level();
         uint16_t white_value = veml.get_white_level();
-        ESP_LOGI(LOG_TAG, "ALS: %d, White: %d\n", als_value, white_value);
+        float lux = veml.get_lux();
+        ESP_LOGI(LOG_TAG, "ALS: %d, White: %d, lux: %f\n", als_value,
+                 white_value, lux);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }

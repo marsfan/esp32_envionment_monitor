@@ -3,6 +3,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https: //mozilla.org/MPL/2.0/.
  */
+/// VEML7700 implementation.
+
+// Developed from the following documents:
+// https://www.vishay.com/docs/84286/veml7700.pdf
+// https://cdn.sparkfun.com/assets/8/7/4/4/1/VEML7700_Application_Note.pdf
+
 #ifndef VEML_H
 #define VEML_H
 
@@ -112,7 +118,13 @@ class Veml7700 {
     esp_err_t set_configuration(const veml_config_reg_t *const config);
 
     /*!
-     * @brief Get the sensor configuration over I2C
+     * @brief Get the sensor configuration over I2C, store it in the instance.
+     * @return Result of getting configuration.
+     */
+    esp_err_t get_configuration(void);
+
+    /*!
+     * @brief Get the sensor configuration over I2C, store it in the instance.
      * @param[out] config pointer to a struct to store the read config data
      * @return Result of getting configuration.
      */
@@ -129,6 +141,12 @@ class Veml7700 {
       @return The raw white light level from the sensor.
     */
     uint16_t get_white_level(void);
+
+    /*!
+     * @brief Get the computed ALS Lux value.
+     *  @return The computed brightness in Lux
+     */
+    float get_lux(void);
 
    private:
     /// @brief Sensor configuration
