@@ -14,5 +14,19 @@
     ],
     "idf.portWin": "COM3",
     "idf.pythonBinPathWin": "C:\\esp_idf\\.espressif\\python_env\\idf5.1_py3.11_env\\Scripts\\python.exe",
-    "idf.toolsPathWin": "C:\\esp_idf\\.espressif"
+    "idf.toolsPathWin": "C:\\esp_idf\\.espressif",
+    "files.associations": {
+        "*.defs": "makefile",
+        "*.dim": "xml",
+        "*.snap": "xml",
+        "esp_log.h": "c",
+        "i2c.h": "c",
+        "semphr.h": "c"
+    },
+    "cSpell.words": [
+        "veml",
+        "ESP_LOGI",
+        "GPIO",
+        "SCLK"
+    ]
 }
