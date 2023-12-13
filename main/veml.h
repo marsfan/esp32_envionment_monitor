@@ -9,6 +9,10 @@
 // https://www.vishay.com/docs/84286/veml7700.pdf
 // https://cdn.sparkfun.com/assets/8/7/4/4/1/VEML7700_Application_Note.pdf
 
+// Additionally, used the Sparkfun VEML7700 library for reference, which is MIT
+// licensed.
+// https://github.com/sparkfun/SparkFun_VEML7700_Arduino_Library
+
 #ifndef VEML_H
 #define VEML_H
 
@@ -132,18 +136,18 @@ class Veml7700 {
 
     /*!
      * @brief Get the raw ambient light level from the sensor
-     *  @return The raw ambient light level from the sensor.
+     * @return The raw ambient light level from the sensor.
      */
     uint16_t get_ambient_level(void);
 
     /*!
-     * @brief Get the raw white light level from the sensor
+     *  @brief Get the raw white light level from the sensor
      *  @return The raw white light level from the sensor.
      */
     uint16_t get_white_level(void);
 
     /*!
-     * @brief Get the computed ALS Lux value.
+     *  @brief Get the computed ALS Lux value.
      *  @return The computed brightness in Lux
      */
     float get_lux(void);
@@ -157,6 +161,7 @@ class Veml7700 {
     /*!
      * @brief Set the sensor gain
      * @param[in] gain The gain to set the sensor
+     * @return Result of getting configuration.
      */
     esp_err_t set_gain(const veml_gain_options_e gain);
 
@@ -169,9 +174,24 @@ class Veml7700 {
     /*!
      * @brief Set the sensor integration time
      * @param[in] integration_time The integration time to set into the
-     * sensor.*/
+     * sensor.
+     * @return Result of getting configuration.
+     */
     esp_err_t set_integration_time(
         const veml_integration_options_e integration_time);
+
+    /*!
+     * @brief Get whether or not the low-power mode is enabled
+     * @returns Sensor power state
+     */
+    veml_power_options_e get_power_state(void);
+
+    /*!
+     * @brief Set the power state
+     * @param[in] state The power state to set.
+     * @return Result of getting configuration.
+     */
+    esp_err_t set_power_state(const veml_power_options_e state);
 
    private:
     /// @brief Sensor configuration

@@ -111,6 +111,18 @@ esp_err_t Veml7700::set_integration_time(
     return this->set_configuration();
 }
 
+// See veml.h for documentation
+veml_power_options_e Veml7700::get_power_state(void) {
+    this->get_configuration();
+    return (veml_power_options_e)this->configuration.shutdown;
+}
+
+// See veml.h for documentation
+esp_err_t Veml7700::set_power_state(const veml_power_options_e state) {
+    this->configuration.shutdown = state;
+    return this->set_configuration();
+}
+
 /*======================================================================
  *                       Private Functions
  *=====================================================================*/

@@ -47,11 +47,9 @@ extern "C" void app_main(void) {
 
     /// Continuously read from the VEML light sensor and print the result.
     while (true) {
-        uint16_t als_value = veml.get_ambient_level();
-        uint16_t white_value = veml.get_white_level();
-        float lux = veml.get_lux();
-        ESP_LOGI(LOG_TAG, "ALS: %d, White: %d, lux: %f", als_value, white_value,
-                 lux);
+        ESP_LOGI(LOG_TAG, "ALS: %d, White: %d, lux: %f",
+                 veml.get_ambient_level(), veml.get_white_level(),
+                 veml.get_lux());
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
