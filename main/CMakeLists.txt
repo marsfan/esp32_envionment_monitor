@@ -1,2 +1,2 @@
-idf_component_register(SRCS "veml.cpp" "main.cpp"
+idf_component_register(SRCS "common.cpp" "veml.cpp" "main.cpp"
                     INCLUDE_DIRS ".")

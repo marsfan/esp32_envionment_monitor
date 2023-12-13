@@ -28,5 +28,6 @@
         "ESP_LOGI",
         "GPIO",
         "SCLK"
-    ]
+    ],
+    "idf.flashType": "UART"
 }

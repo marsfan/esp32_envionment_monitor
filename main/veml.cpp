@@ -5,26 +5,33 @@
  */
 #include "veml.h"
 
+#include <driver/i2c.h>
+#include <esp_log.h>
+#include <stdio.h>
 #include <string.h>
 
-#include "driver/i2c.h"
+#include "common.h"
 
-#define ALS_BASE_SCALE 0.0036  ///< Base scale for raw ALS to Lux
+#define VEML_TAG "VEML7700"    //< Tag used for logging messages for this module
+#define ALS_BASE_SCALE 0.0036  //< Base scale for raw ALS to Lux
 
 static uint8_t get_integration_scale(
     const veml_integration_options_e integration_time);
 
 static uint8_t get_gain_scale(const veml_gain_options_e gain);
 
+/*======================================================================
+ *                       Public Functions
+ *=====================================================================*/
+
 Veml7700::Veml7700(i2c_port_t i2c_port) {
     this->i2c_port = i2c_port;
+    (void)memset(&this->configuration, 0, sizeof(veml_config_reg_t));
 }
 
 // See veml.h for documentation
 esp_err_t Veml7700::set_configuration(void) {
-    veml_config_reg_t config;
-    memset(&config, 0x0, sizeof(veml_config_reg_t));
-    return this->set_configuration(&config);
+    return this->set_configuration(&this->configuration);
 }
 
 // See veml.h for documentation.
@@ -32,14 +39,20 @@ esp_err_t Veml7700::set_configuration(const veml_config_reg_t *const config) {
     /// Copy configuration to store internally
     (void)memcpy(&this->configuration, config, sizeof(veml_config_reg_t));
 
-    return this->write_to_reg(VEML_CONFIG_REG,
-                              (uint16_t *)&this->configuration);
+    esp_err_t err =
+        this->write_to_reg(VEML_CONFIG_REG, (uint16_t *)&this->configuration);
+    log_e_on_error(err, VEML_TAG, __func__,
+                   "Failed setting VEML7700 Configuration register");
+    return err;
 }
 
 // See veml.h for documentation
 esp_err_t Veml7700::get_configuration(void) {
-    return this->read_from_reg(VEML_CONFIG_REG,
-                               (uint16_t *)&this->configuration);
+    esp_err_t err =
+        this->read_from_reg(VEML_CONFIG_REG, (uint16_t *)&this->configuration);
+    log_e_on_error(err, VEML_TAG, __func__,
+                   "Failed reading VEMP7700 Configuration Register");
+    return err;
 }
 
 // See veml.h for documentation
@@ -54,34 +67,47 @@ esp_err_t Veml7700::get_configuration(veml_config_reg_t *config) {
 // See veml.h for documentation
 uint16_t Veml7700::get_ambient_level(void) {
     uint16_t data;
-    ESP_ERROR_CHECK(this->read_from_reg(VEML_ALS_LEVEL_REG, &data));
+    esp_err_t err = this->read_from_reg(VEML_ALS_LEVEL_REG, &data);
+    log_e_on_error(err, VEML_TAG, __func__, "Failed reading ALS Register");
     return data;
 }
 
 // See veml.h for documentation
 uint16_t Veml7700::get_white_level(void) {
     uint16_t data;
-    ESP_ERROR_CHECK(this->read_from_reg(VEML_WHITE_LEVEL_REG, &data));
+    esp_err_t err = this->read_from_reg(VEML_WHITE_LEVEL_REG, &data);
+    log_e_on_error(err, VEML_TAG, __func__,
+                   "Failed reading white level Register");
     return data;
 }
 
 // See veml.h for documentation.
 float Veml7700::get_lux(void) {
-    uint16_t raw_value = this->get_ambient_level();
-    const uint16_t gain_scale =
-        get_gain_scale((veml_gain_options_e)this->configuration.gain);
-    const uint16_t integration_scale = get_integration_scale(
-        (veml_integration_options_e)this->configuration.integration_time);
-    return raw_value * (ALS_BASE_SCALE * gain_scale * integration_scale);
+    return this->get_ambient_level() * this->get_als_scale();
 }
+
+veml_gain_options_e Veml7700::get_gain(void) {
+    this->get_configuration();
+    return (veml_gain_options_e)this->configuration.gain;
+}
+
+esp_err_t Veml7700::set_gain(const veml_gain_options_e gain) {
+    this->configuration.gain = gain;
+    return this->set_configuration();
+}
+
+/*======================================================================
+ *                       Private Functions
+ *=====================================================================*/
 
 // See veml.h for documentation.
 esp_err_t Veml7700::write_to_reg(const uint8_t reg,
                                  const uint16_t *const data) {
     // First byte is  the register
     // Second and third bytes are the data bytes.
-    uint8_t data_buffer[3] = {reg, (*data & 0xF0) >> 0xF,
-                              (uint8_t)(*data & 0x0F)};
+    const uint8_t data_high = (*data & 0xF0) >> 8;
+    const uint8_t data_low = *data * 0x0F;
+    const uint8_t data_buffer[3] = {reg, data_high, data_low};
     return i2c_master_write_to_device(this->i2c_port, VEML_ADDR, data_buffer, 3,
                                       I2C_MASTER_TIMEOUT_MS);
 }
@@ -91,6 +117,15 @@ esp_err_t Veml7700::read_from_reg(const uint8_t reg, uint16_t *const data) {
     return i2c_master_write_read_device(this->i2c_port, VEML_ADDR,
                                         (uint8_t *)&reg, 1, (uint8_t *)data,
                                         VEML_REG_BYTES, I2C_MASTER_TIMEOUT_MS);
+}
+
+// See veml.h for documentation
+float Veml7700::get_als_scale(void) {
+    const uint8_t integration_scale = get_integration_scale(
+        (veml_integration_options_e)this->configuration.integration_time);
+    const uint8_t gain_scale =
+        get_gain_scale((veml_gain_options_e)this->configuration.gain);
+    return ALS_BASE_SCALE * integration_scale * gain_scale;
 }
 
 /// @brief Compute the multiplier caused by different integration times.

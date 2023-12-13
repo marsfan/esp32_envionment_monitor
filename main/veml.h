@@ -131,15 +131,15 @@ class Veml7700 {
     esp_err_t get_configuration(veml_config_reg_t *config);
 
     /*!
-    * @brief Get the raw ambient light level from the sensor
-      @return The raw ambient light level from the sensor.
-    */
+     * @brief Get the raw ambient light level from the sensor
+     *  @return The raw ambient light level from the sensor.
+     */
     uint16_t get_ambient_level(void);
 
     /*!
-    * @brief Get the raw white light level from the sensor
-      @return The raw white light level from the sensor.
-    */
+     * @brief Get the raw white light level from the sensor
+     *  @return The raw white light level from the sensor.
+     */
     uint16_t get_white_level(void);
 
     /*!
@@ -147,6 +147,18 @@ class Veml7700 {
      *  @return The computed brightness in Lux
      */
     float get_lux(void);
+
+    /*!
+     *  @brief Get the current sensor gain
+     *  @return The current sensor gain
+     */
+    veml_gain_options_e get_gain(void);
+
+    /*!
+     * @brief Set the sensor gain
+     * @param[in] gain The gain to set the sensor
+     */
+    esp_err_t set_gain(const veml_gain_options_e gain);
 
    private:
     /// @brief Sensor configuration
@@ -170,6 +182,12 @@ class Veml7700 {
      * @returns Error code from the I2C Operation
      */
     esp_err_t read_from_reg(const uint8_t reg, uint16_t *const data);
+
+    /*!
+     * @brief Get the scaling factor to convert raw ALS value to Lux.
+     * @return Scaling factor to convert raw ALS value to Lux.
+     */
+    float get_als_scale(void);
 };
 
 #endif  // VEML_H
