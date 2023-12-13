@@ -160,6 +160,19 @@ class Veml7700 {
      */
     esp_err_t set_gain(const veml_gain_options_e gain);
 
+    /*!
+     * @brief Get the current integration time
+     * @returns The current integration time
+     */
+    veml_integration_options_e get_integration_time(void);
+
+    /*!
+     * @brief Set the sensor integration time
+     * @param[in] integration_time The integration time to set into the
+     * sensor.*/
+    esp_err_t set_integration_time(
+        const veml_integration_options_e integration_time);
+
    private:
     /// @brief Sensor configuration
     veml_config_reg_t configuration;

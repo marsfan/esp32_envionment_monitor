@@ -86,13 +86,28 @@ float Veml7700::get_lux(void) {
     return this->get_ambient_level() * this->get_als_scale();
 }
 
+// See veml.h for documentation.
 veml_gain_options_e Veml7700::get_gain(void) {
     this->get_configuration();
     return (veml_gain_options_e)this->configuration.gain;
 }
 
+// See veml.h for documentation.
 esp_err_t Veml7700::set_gain(const veml_gain_options_e gain) {
     this->configuration.gain = gain;
+    return this->set_configuration();
+}
+
+// See veml.h for documentation.
+veml_integration_options_e Veml7700::get_integration_time(void) {
+    this->get_configuration();
+    return (veml_integration_options_e)this->configuration.integration_time;
+}
+
+// See veml.h for documentation
+esp_err_t Veml7700::set_integration_time(
+    const veml_integration_options_e integration_time) {
+    this->configuration.integration_time = integration_time;
     return this->set_configuration();
 }
 

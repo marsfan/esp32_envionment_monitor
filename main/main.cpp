@@ -41,14 +41,17 @@ extern "C" void app_main(void) {
 
     /// Configure VEML
     ESP_ERROR_CHECK(veml.set_configuration());
+    ESP_LOGI(LOG_TAG, "VEML7700 Gain Option: %d", veml.get_gain());
+    ESP_LOGI(LOG_TAG, "VEML7700 Integration Time: %d",
+             veml.get_integration_time());
 
     /// Continuously read from the VEML light sensor and print the result.
     while (true) {
         uint16_t als_value = veml.get_ambient_level();
         uint16_t white_value = veml.get_white_level();
         float lux = veml.get_lux();
-        ESP_LOGI(LOG_TAG, "ALS: %d, White: %d, lux: %f\n", als_value,
-                 white_value, lux);
+        ESP_LOGI(LOG_TAG, "ALS: %d, White: %d, lux: %f", als_value, white_value,
+                 lux);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
