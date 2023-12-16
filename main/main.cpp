@@ -6,7 +6,9 @@
 #include <esp_err.h>
 #include <esp_log.h>
 #include <stdio.h>
+#include <string.h>
 
+#include "bme688.h"
 #include "driver/i2c.h"
 #include "veml.h"
 
@@ -19,6 +21,7 @@
 #define I2C_MASTER_PORT I2C_NUM_0
 
 Veml7700 veml(I2C_MASTER_PORT);
+Bme688 bme(I2C_MASTER_PORT, 1000 / portTICK_PERIOD_MS);
 
 static esp_err_t configure_i2c(void) {
     i2c_config_t i2c_config = {
@@ -38,6 +41,11 @@ static esp_err_t configure_i2c(void) {
 extern "C" void app_main(void) {
     ESP_LOGI(LOG_TAG, "Starting System Up");
     ESP_ERROR_CHECK(configure_i2c());
+
+    ESP_ERROR_CHECK(bme.init());
+    ESP_LOGI(LOG_TAG, "Started BME688");
+    ESP_LOGI(LOG_TAG, "Finished BME688 self test. Result=%d\n",
+             bme.self_test());
 
     /// Configure VEML
     ESP_ERROR_CHECK(veml.set_configuration());
