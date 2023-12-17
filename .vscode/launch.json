@@ -4,7 +4,12 @@
     {
       "type": "espidf",
       "name": "Launch",
-      "request": "launch"
+      "request": "launch",
+      "debugPort": 9998,
+      "logLevel": 2,
+      "mode": "auto",
+      "verifyAppBinBeforeDebug": false,
+      "tmoScaleFactor": 1,
     }
   ]
 }
