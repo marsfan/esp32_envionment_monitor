@@ -45,6 +45,11 @@ int8_t Bme688::self_test(void) {
 }
 
 // See bme688.h for documentation
+int8_t Bme688::soft_reset(void) {
+    return bme68x_soft_reset(&this->device);
+}
+
+// See bme688.h for documentation
 int8_t Bme688::set_op_mode(const uint8_t op_mode) {
     return bme68x_set_op_mode(op_mode, &this->device);
 }
