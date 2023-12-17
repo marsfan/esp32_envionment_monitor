@@ -162,43 +162,20 @@ int8_t i2c_write(uint8_t reg_addr, const uint8_t* reg_data, uint32_t length,
     if (intf_pointer) {
         Bme688* device = (Bme688*)intf_pointer;
 
-        i2c_cmd_handle_t handle = i2c_cmd_link_create();
-        assert(handle != NULL);
-        err = i2c_master_start(handle);
-        if (err != ESP_OK) {
-            i2c_cmd_link_delete(handle);
-            return err;
-        }
-        // Send device address
-        err = i2c_master_write_byte(
-            handle, BME68X_I2C_ADDR_HIGH << 1 | I2C_MASTER_WRITE, true);
-        if (err != ESP_OK) {
-            i2c_cmd_link_delete(handle);
-            return err;
-        }
+        // Create new array of bytes to send that is 1 larger than the reg_data
+        // array
+        uint8_t data[length + 1];
 
-        // Send register address
-        err = i2c_master_write_byte(handle, reg_addr, true);
-        if (err != ESP_OK) {
-            i2c_cmd_link_delete(handle);
-            return err;
-        }
+        // Copy register data into the 1..end elements of the array.
+        (void)memcpy(&data[1], reg_data, length);
 
-        // Send data
-        err = i2c_master_write(handle, reg_data, length, true);
-        if (err != ESP_OK) {
-            i2c_cmd_link_delete(handle);
-            return err;
-        }
-        err = i2c_master_stop(handle);
-        if (err != ESP_OK) {
-            i2c_cmd_link_delete(handle);
-            return err;
-        }
+        // Set the first byte of the array to the register address.
+        data[0] = reg_addr;
 
-        err = i2c_master_cmd_begin(device->get_i2c_port(), handle,
-                                   device->get_wait_time());
-        i2c_cmd_link_delete(handle);
+        // Send the data
+        err = i2c_master_write_to_device(device->get_i2c_port(),
+                                         BME68X_I2C_ADDR_HIGH, data, length + 1,
+                                         device->get_wait_time());
     }
     return err;
 }
