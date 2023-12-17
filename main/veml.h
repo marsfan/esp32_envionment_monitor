@@ -81,15 +81,25 @@ typedef enum {
 // Definitions for registers that have bitwise configuration.
 
 /// @brief The configuration register (address 0x00)
-typedef struct {
-    uint16_t reserved1         : 3;  ///< Reserved bits
-    uint16_t gain              : 2;  ///< ALS Channel gain
-    uint16_t reserved2         : 1;  ///< Reserved bits
-    uint16_t integration_time  : 4;  ///< ALS channel integration time
-    uint16_t persistence       : 2;  ///< ALS channel persistence protection
-    uint16_t reserved3         : 2;  ///< Reserved bits
-    uint16_t interrupt_enabled : 1;  ///< Whether or not to enable ALS interrupt
-    uint16_t shutdown          : 1;  ///< Whether or not to shut down the ALS
+typedef union {
+    struct {
+        uint16_t reserved1        : 3;  ///< Reserved bits
+        uint16_t gain             : 2;  ///< ALS Channel gain
+        uint16_t reserved2        : 1;  ///< Reserved bits
+        uint16_t integration_time : 4;  ///< ALS channel integration time
+        uint16_t persistence      : 2;  ///< ALS channel persistence protection
+        uint16_t reserved3        : 2;  ///< Reserved bits
+        uint16_t
+            interrupt_enabled : 1;  ///< Whether or not to enable ALS interrupt
+        uint16_t shutdown     : 1;  ///< Whether or not to shut down the ALS
+    };                              // Deliberately unnamed
+
+    struct {
+        uint8_t upper_bytes;  ///< Upper 8 byte register
+        uint8_t lower_bytes;  ///< Lower 8 byte register
+    } regs_8bit;
+
+    uint16_t regs_16bit;  ///< 16  Bit register form
 } veml_config_reg_t;
 
 /// @brief Power Saving Configuration register

@@ -40,7 +40,7 @@ esp_err_t Veml7700::set_configuration(const veml_config_reg_t *const config) {
     (void)memcpy(&this->configuration, config, sizeof(veml_config_reg_t));
 
     esp_err_t err =
-        this->write_to_reg(VEML_CONFIG_REG, (uint16_t *)&this->configuration);
+        this->write_to_reg(VEML_CONFIG_REG, &this->configuration.regs_16bit);
     log_e_on_error(err, VEML_TAG, __func__,
                    "Failed setting VEML7700 Configuration register");
     return err;
@@ -49,7 +49,7 @@ esp_err_t Veml7700::set_configuration(const veml_config_reg_t *const config) {
 // See veml.h for documentation
 esp_err_t Veml7700::get_configuration(void) {
     esp_err_t err =
-        this->read_from_reg(VEML_CONFIG_REG, (uint16_t *)&this->configuration);
+        this->read_from_reg(VEML_CONFIG_REG, &this->configuration.regs_16bit);
     log_e_on_error(err, VEML_TAG, __func__,
                    "Failed reading VEMP7700 Configuration Register");
     return err;
@@ -141,9 +141,9 @@ esp_err_t Veml7700::write_to_reg(const uint8_t reg,
 
 // See veml.h for documentation
 esp_err_t Veml7700::read_from_reg(const uint8_t reg, uint16_t *const data) {
-    return i2c_master_write_read_device(this->i2c_port, VEML_ADDR,
-                                        (uint8_t *)&reg, 1, (uint8_t *)data,
-                                        VEML_REG_BYTES, I2C_MASTER_TIMEOUT_MS);
+    return i2c_master_write_read_device(this->i2c_port, VEML_ADDR, &reg, 1,
+                                        (uint8_t *)data, VEML_REG_BYTES,
+                                        I2C_MASTER_TIMEOUT_MS);
 }
 
 // See veml.h for documentation
