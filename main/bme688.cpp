@@ -23,6 +23,7 @@ Bme688::Bme688(const i2c_port_t i2c_port, const TickType_t wait_time) {
 
     this->i2c_port = i2c_port;
     this->wait_time = wait_time;
+    this->device.intf = BME68X_I2C_INTF;
     this->device.delay_us = delay;
     this->device.read = i2c_read;
     this->device.write = i2c_write;
