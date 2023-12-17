@@ -17,6 +17,24 @@ int8_t i2c_read(uint8_t reg_addr, uint8_t* reg_data, uint32_t length,
 int8_t i2c_write(uint8_t reg_addr, const uint8_t* reg_data, uint32_t length,
                  void* intf_pointer);
 
+// See Bme688.h for documentation
+const char* BME_Err_To_String(const int bme_err_code) {
+    switch (bme_err_code) {
+        case BME68X_E_NULL_PTR:
+            return "Null Pointer";
+        case BME68X_E_COM_FAIL:
+            return "Communication Failure";
+        case BME68X_E_DEV_NOT_FOUND:
+            return "Device Not Found";
+        case BME68X_E_INVALID_LENGTH:
+            return "Incorrect Length Parameter";
+        case BME68X_E_SELF_TEST:
+            return "Self Test Fail";
+        default:
+            return "Unknown Error";
+    }
+}
+
 // See bme688.h for documentation
 Bme688::Bme688(const i2c_port_t i2c_port, const TickType_t wait_time) {
     (void)memset(&this->device, 0, sizeof(bme68x_dev));

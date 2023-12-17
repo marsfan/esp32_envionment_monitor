@@ -16,6 +16,11 @@
 // TODO: Store op_mode in the class so we don't need to keep passing it in to
 // other methods?
 
+/// @brief Convert BME688 error codes to strings
+/// @param bme_err_code The error code to convert.
+/// @return String representation of the error code.
+const char *BME_Err_To_String(const int bme_err_code);
+
 /// @brief BME688 sensor interation class
 class Bme688 {
    public:

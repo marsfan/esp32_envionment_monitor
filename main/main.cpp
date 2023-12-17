@@ -44,6 +44,7 @@ extern "C" void app_main(void) {
 
     ESP_ERROR_CHECK(bme.init());
     ESP_LOGI(LOG_TAG, "Started BME688");
+    ESP_LOGI(LOG_TAG, "Starting BME688 Self Test. This takes a few seconds");
     ESP_LOGI(LOG_TAG, "Finished BME688 self test. Result=%d\n",
              bme.self_test());
 
