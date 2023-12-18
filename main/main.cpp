@@ -12,17 +12,20 @@
 #include "driver/i2c.h"
 #include "veml.h"
 
-#define LOG_TAG "main"
-#define C_TO_F(celsius) ((celsius * 9 / 5) + 32)
+#define LOG_TAG "app_main"  /// Name for logging
+
+#define C_TO_F(celsius) \
+    ((celsius * 9 / 5) + 32)  /// Convert Celsius to Fahrenheit
 
 // I2C Configuration
-#define I2C_MASTER_SDA_IO 32
-#define I2C_MASTER_SCL_IO 33
-#define I2C_MASTER_FREQ_HZ 100000
-#define I2C_MASTER_PORT I2C_NUM_0
+#define I2C_MASTER_SDA_IO 32                     /// I2C SDA Pin
+#define I2C_MASTER_SCL_IO 33                     /// I2C SCL Pin
+#define I2C_MASTER_FREQ_HZ 100000                /// I2C Frequency
+#define I2C_MASTER_PORT I2C_NUM_0                /// I2C Bus Number
+#define I2C_TIMEOUT (1000 / portTICK_PERIOD_MS)  /// I2C Transaction Timeout
 
-Veml7700 veml(I2C_MASTER_PORT, 1000 / portTICK_PERIOD_MS);
-Bme688 bme(I2C_MASTER_PORT, 1000 / portTICK_PERIOD_MS);
+Veml7700 veml(I2C_MASTER_PORT, I2C_TIMEOUT);
+Bme688 bme(I2C_MASTER_PORT, I2C_TIMEOUT);
 
 static esp_err_t configure_i2c(void) {
     i2c_config_t i2c_config = {
