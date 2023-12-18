@@ -101,9 +101,9 @@ int8_t Bme688::set_conf(struct bme68x_conf* conf) {
 }
 
 // See bme688.h for documentation
-int8_t Bme688::set_conf(const uint8_t humidity_oversampling,
-                        const uint8_t temperature_oversampling,
+int8_t Bme688::set_conf(const uint8_t temperature_oversampling,
                         const uint8_t pressure_oversampling,
+                        const uint8_t humidity_oversampling,
                         const uint8_t filter, const uint8_t odr) {
     bme68x_conf config = {
         .os_hum = humidity_oversampling,
@@ -130,6 +130,28 @@ int8_t Bme688::set_heater_conf(uint8_t op_mode,
 // See bme688.h for documentation
 int8_t Bme688::get_heater_conf(const struct bme68x_heatr_conf* conf) {
     return bme68x_get_heatr_conf(conf, &this->device);
+}
+
+// See bme688.h for documentation
+int8_t Bme688::forced_measurement(const struct bme68x_heatr_conf* heater_conf,
+                                  struct bme68x_data* data, uint8_t* n_data) {
+    int8_t result;
+
+    // Force a measurement.
+    result = this->set_op_mode(BME68X_FORCED_MODE);
+    if (result == BME68X_OK) {
+        // TODO: Support heater sequence as well?
+        // TODO: Put this before setting op mode?
+        // Compute necessary delay period.
+        uint32_t delay_period = this->get_meas_duration(BME68X_FORCED_MODE) +
+                                (heater_conf->heatr_dur * 1000);
+        this->device.delay_us(delay_period, this->device.intf_ptr);
+
+        // Read the data
+        result = this->get_data(BME68X_FORCED_MODE, data, n_data);
+    }
+
+    return result;
 }
 
 // See bme688.h for documentation

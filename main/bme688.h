@@ -104,9 +104,9 @@ class Bme688 {
 
     /*!
      * @brief Set the sensor configurations
-     * @param[in] humidity_oversampling Humidity oversampling amount
      * @param[in] temperature_oversampling Temperature oversampling amount
      * @param[in] pressure_oversampling Pressure oversampling amount
+     * @param[in] humidity_oversampling Humidity oversampling amount
      * @param[in] filter The filter coefficient to use
      * @param[in] odr Standby time between sequential mode measurement profiles.
      * @return Result of setting the sensor configuration.
@@ -114,9 +114,9 @@ class Bme688 {
      * @retval <0: Failure
      * */
     // FIXME: Enumerations
-    int8_t set_conf(const uint8_t humidity_oversampling,
-                    const uint8_t temperature_oversampling,
-                    const uint8_t pressure_oversampling, const uint8_t filter,
+    int8_t set_conf(const uint8_t temperature_oversampling,
+                    const uint8_t pressure_oversampling,
+                    const uint8_t humidity_oversampling, const uint8_t filter,
                     const uint8_t odr);
     /*!
      * @brief Get the sensor configurations
@@ -146,6 +146,20 @@ class Bme688 {
      * @retval <0: Failure
      * */
     int8_t get_heater_conf(const struct bme68x_heatr_conf *conf);
+
+    /// @brief Perform a single forced measurement.
+    /// @details This will perform a single forced measurement on the BME688.
+    /// There is a delay involved in this, so it will briefly block the running
+    /// thread.
+    /// @note When using this method, the heater should be set to a single
+    /// period, not a sequence.
+    /// @param heater_conf The heater config that is set into the sensor.
+    /// @param data Pointer to the structure to hold the read data.
+    /// @param n_data The number of data samples. Should always be 1 I think
+    /// @return Result of performing the measurement.
+    // TODO: Confirm that n_data is always 1 for forced measuremnt.
+    int8_t forced_measurement(const struct bme68x_heatr_conf *heater_conf,
+                              bme68x_data *data, uint8_t *n_data);
 
     /*!
      * @brief Get the i2c_port used by the device
