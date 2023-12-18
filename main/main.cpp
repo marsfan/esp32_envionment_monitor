@@ -20,7 +20,7 @@
 #define I2C_MASTER_FREQ_HZ 100000
 #define I2C_MASTER_PORT I2C_NUM_0
 
-Veml7700 veml(I2C_MASTER_PORT);
+Veml7700 veml(I2C_MASTER_PORT, 1000 / portTICK_PERIOD_MS);
 Bme688 bme(I2C_MASTER_PORT, 1000 / portTICK_PERIOD_MS);
 
 static esp_err_t configure_i2c(void) {

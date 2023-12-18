@@ -21,12 +21,8 @@
 
 #include "driver/i2c.h"
 
-#define VEML_ADDR 0x10  ///< I2C Address of the VEML 7700
-#define I2C_MASTER_TIMEOUT_MS \
-    1000 / portTICK_PERIOD_MS  ///< How long to wait before I2C transmission
-                               ///< considered failed
-#define VEML_REG_BYTES 2       ///< Size of a single register on the VEML
-
+#define VEML_ADDR 0x10                ///< I2C Address of the VEML 7700
+#define VEML_REG_BYTES 2              ///< Size of a single register on the VEML
 #define VEML_CONFIG_REG 0x00          ///< Configuration register address
 #define VEML_THRESHOLD_HIGH_REG 0x01  ///< High threshold window setting
 #define VEML_THRESHOLD_LOW_REG 0x02   ///< Low threshold window setting
@@ -115,8 +111,9 @@ class Veml7700 {
     /*!
      * @brief Instantiate the device.
      * @param[in] i2c_port The i2c port to use for communicating with the sensor
+     * @param[in] wait_time The max wait time after an I2C operation.
      */
-    Veml7700(i2c_port_t i2c_port);
+    Veml7700(const i2c_port_t i2c_port, const TickType_t wait_time);
 
     /*!
      *  @brief Set the sensor configuration over I2C
@@ -209,6 +206,9 @@ class Veml7700 {
 
     /// @brief  I2C port to use
     i2c_port_t i2c_port;
+
+    /// @brief Time to wait for I2C operations
+    TickType_t wait_time;
 
     /*!
      * @brief Write to the specific register

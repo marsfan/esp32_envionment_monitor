@@ -24,8 +24,9 @@ static uint8_t get_gain_scale(const veml_gain_options_e gain);
  *                       Public Functions
  *=====================================================================*/
 
-Veml7700::Veml7700(i2c_port_t i2c_port) {
+Veml7700::Veml7700(const i2c_port_t i2c_port, const TickType_t wait_time) {
     this->i2c_port = i2c_port;
+    this->wait_time = wait_time;
     (void)memset(&this->configuration, 0, sizeof(veml_config_reg_t));
 }
 
@@ -136,14 +137,14 @@ esp_err_t Veml7700::write_to_reg(const uint8_t reg,
     const uint8_t data_low = *data * 0x0F;
     const uint8_t data_buffer[3] = {reg, data_high, data_low};
     return i2c_master_write_to_device(this->i2c_port, VEML_ADDR, data_buffer, 3,
-                                      I2C_MASTER_TIMEOUT_MS);
+                                      this->wait_time);
 }
 
 // See veml.h for documentation
 esp_err_t Veml7700::read_from_reg(const uint8_t reg, uint16_t *const data) {
     return i2c_master_write_read_device(this->i2c_port, VEML_ADDR, &reg, 1,
                                         (uint8_t *)data, VEML_REG_BYTES,
-                                        I2C_MASTER_TIMEOUT_MS);
+                                        this->wait_time);
 }
 
 // See veml.h for documentation
