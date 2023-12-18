@@ -80,7 +80,7 @@ class Bme688 {
      * @param[in] conf The sensor configuration to use.
      * @return Measurement duration in microseconds
      * */
-    uint32_t get_meas_duration(const uint8_t op_mode, struct bme68x_conf *conf);
+    uint32_t get_meas_duration(const uint8_t op_mode);
 
     /*!
      * @brief Read the data from the sensor

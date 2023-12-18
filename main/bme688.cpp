@@ -79,9 +79,14 @@ int8_t Bme688::get_op_mode(uint8_t* op_mode) {
 }
 
 // See bme688.h for documentation
-uint32_t Bme688::get_meas_duration(const uint8_t op_mode,
-                                   struct bme68x_conf* conf) {
-    return bme68x_get_meas_dur(op_mode, conf, &this->device);
+uint32_t Bme688::get_meas_duration(const uint8_t op_mode) {
+    struct bme68x_conf conf;
+    int8_t result = BME68X_OK;
+    result = this->get_conf(&conf);
+    if (result == BME68X_OK) {
+        result = bme68x_get_meas_dur(op_mode, &conf, &this->device);
+    }
+    return result;
 }
 
 // See bme688.h for documentation
