@@ -66,7 +66,7 @@ extern "C" void app_main(void) {
     ESP_LOGI(LOG_TAG, "VEML7700 Integration Time: %d",
              veml.get_integration_time());
 
-    /// Continuously read from the VEML light sensor and print the result.
+    /// Continuously read from the sensors and print the result.
     while (true) {
         ESP_LOGI(LOG_TAG, "ALS: %d, White: %d, lux: %f",
                  veml.get_ambient_level(), veml.get_white_level(),
@@ -74,15 +74,16 @@ extern "C" void app_main(void) {
 
         uint8_t n_fields;
         struct bme68x_data data;
-        ESP_LOGI(LOG_TAG, "Read BME688 Data. Result=%d",
-                 bme.forced_measurement(&heater_conf, &data, &n_fields));
+        const int8_t read_result =
+            bme.forced_measurement(&heater_conf, &data, &n_fields);
 
         ESP_LOGI(LOG_TAG,
-                 "BME688 Sample, temp=%.2f, pressure=%.2f, "
+                 "BME688 result=%d, temp=%.2f, pressure=%.2f, "
                  "humidity=%.2f, gas resistance=%.2f, gas index: %d, "
                  "measurement index: %d",
-                 C_TO_F(data.temperature), data.pressure, data.humidity,
-                 data.gas_resistance, data.gas_index, data.meas_index);
+                 read_result, C_TO_F(data.temperature), data.pressure,
+                 data.humidity, data.gas_resistance, data.gas_index,
+                 data.meas_index);
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
