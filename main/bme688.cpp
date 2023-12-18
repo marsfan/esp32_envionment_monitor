@@ -96,6 +96,22 @@ int8_t Bme688::set_conf(struct bme68x_conf* conf) {
 }
 
 // See bme688.h for documentation
+int8_t Bme688::set_conf(const uint8_t humidity_oversampling,
+                        const uint8_t temperature_oversampling,
+                        const uint8_t pressure_oversampling,
+                        const uint8_t filter, const uint8_t odr) {
+    bme68x_conf config = {
+        .os_hum = humidity_oversampling,
+        .os_temp = temperature_oversampling,
+        .os_pres = pressure_oversampling,
+        .filter = filter,
+        .odr = odr,
+    };
+
+    return this->set_conf(&config);
+}
+
+// See bme688.h for documentation
 int8_t Bme688::get_conf(struct bme68x_conf* conf) {
     return bme68x_get_conf(conf, &this->device);
 }

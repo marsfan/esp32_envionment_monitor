@@ -103,6 +103,22 @@ class Bme688 {
     int8_t set_conf(struct bme68x_conf *conf);
 
     /*!
+     * @brief Set the sensor configurations
+     * @param[in] humidity_oversampling Humidity oversampling amount
+     * @param[in] temperature_oversampling Temperature oversampling amount
+     * @param[in] pressure_oversampling Pressure oversampling amount
+     * @param[in] filter The filter coefficient to use
+     * @param[in] odr Standby time between sequential mode measurement profiles.
+     * @return Result of setting the sensor configuration.
+     * @retval 0: Success
+     * @retval <0: Failure
+     * */
+    // FIXME: Enumerations
+    int8_t set_conf(const uint8_t humidity_oversampling,
+                    const uint8_t temperature_oversampling,
+                    const uint8_t pressure_oversampling, const uint8_t filter,
+                    const uint8_t odr);
+    /*!
      * @brief Get the sensor configurations
      * @param[out] conf The sensor configuration
      * @return Result of getting the sensor configuration.
