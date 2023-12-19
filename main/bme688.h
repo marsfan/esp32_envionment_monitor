@@ -139,6 +139,26 @@ class Bme688 {
                            const struct bme68x_heatr_conf *conf);
 
     /*!
+     * @brief Set the heater config to be disabled.
+     * @param op_mode The operating mode for the sensor
+     * @return Result of setting the sensor heater configuration.
+     * @retval 0: Success
+     * @retval <0: Failure
+     */
+    int8_t set_heater_conf_disabled(uint8_t op_mode);
+
+    /*!
+     * @brief Set the heater config for a forced mode reading.
+     * @param temp The temperature (in C) to run the heater in forced mode.
+     * @param duration The heating duration (in ms) to run the heater in forced
+     * mode
+     * @return Result of setting the sensor heater configuration.
+     * @retval 0: Success
+     * @retval <0: Failure
+     */
+    int8_t set_heater_conf_forced(uint16_t temp, uint16_t duration);
+
+    /*!
      * @brief Get the sensor heating configuration.
      * @param[out] conf The heaterr configuration.
      * @return Result of getting the sensor heater configuration.
@@ -153,13 +173,11 @@ class Bme688 {
     /// thread.
     /// @note When using this method, the heater should be set to a single
     /// period, not a sequence.
-    /// @param heater_conf The heater config that is set into the sensor.
     /// @param data Pointer to the structure to hold the read data.
     /// @param n_data The number of data samples. Should always be 1 I think
     /// @return Result of performing the measurement.
     // TODO: Confirm that n_data is always 1 for forced measuremnt.
-    int8_t forced_measurement(const struct bme68x_heatr_conf *heater_conf,
-                              bme68x_data *data, uint8_t *n_data);
+    int8_t forced_measurement(bme68x_data *data, uint8_t *n_data);
 
     /*!
      * @brief Get the i2c_port used by the device
@@ -182,5 +200,8 @@ class Bme688 {
 
     /// @brief BME68x device structure
     bme68x_dev device;
+
+    /// @brief The last heater configuration that was sent.
+    bme68x_heatr_conf heater_conf;
 };
 #endif  // BME688_H

@@ -124,7 +124,25 @@ int8_t Bme688::get_conf(struct bme68x_conf* conf) {
 // See bme688.h for documentation
 int8_t Bme688::set_heater_conf(uint8_t op_mode,
                                const struct bme68x_heatr_conf* conf) {
+    // Copy last heater config over for later use
+    (void)memcpy(&this->heater_conf, conf, sizeof(bme68x_heatr_conf));
     return bme68x_set_heatr_conf(op_mode, conf, &this->device);
+}
+
+// See bme688.h for documentation
+int8_t Bme688::set_heater_conf_disabled(uint8_t op_mode) {
+    (void)memset(&this->heater_conf, 0, sizeof(bme68x_heatr_conf));
+    this->heater_conf.enable = BME68X_DISABLE;
+    return bme68x_set_heatr_conf(op_mode, &this->heater_conf, &this->device);
+}
+
+// See bme688.h for documentation
+int8_t Bme688::set_heater_conf_forced(uint16_t temp, uint16_t duration) {
+    this->heater_conf.enable = BME68X_ENABLE;
+    this->heater_conf.heatr_dur = duration;
+    this->heater_conf.heatr_temp = temp;
+    return bme68x_set_heatr_conf(BME68X_FORCED_MODE, &this->heater_conf,
+                                 &this->device);
 }
 
 // See bme688.h for documentation
@@ -133,8 +151,7 @@ int8_t Bme688::get_heater_conf(const struct bme68x_heatr_conf* conf) {
 }
 
 // See bme688.h for documentation
-int8_t Bme688::forced_measurement(const struct bme68x_heatr_conf* heater_conf,
-                                  struct bme68x_data* data, uint8_t* n_data) {
+int8_t Bme688::forced_measurement(struct bme68x_data* data, uint8_t* n_data) {
     int8_t result;
 
     // Force a measurement.
@@ -144,7 +161,7 @@ int8_t Bme688::forced_measurement(const struct bme68x_heatr_conf* heater_conf,
         // TODO: Put this before setting op mode?
         // Compute necessary delay period.
         uint32_t delay_period = this->get_meas_duration(BME68X_FORCED_MODE) +
-                                (heater_conf->heatr_dur * 1000);
+                                (this->heater_conf.heatr_dur * 1000);
         this->device.delay_us(delay_period, this->device.intf_ptr);
 
         // Read the data
