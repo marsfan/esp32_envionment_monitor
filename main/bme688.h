@@ -160,6 +160,8 @@ class Bme688 {
 
     /*!
      * @brief Get the sensor heating configuration.
+     * @note. If the structure passed in does not have valid pointers for
+     * populating the heater profile, this will return a null pointer error code
      * @param[out] conf The heaterr configuration.
      * @return Result of getting the sensor heater configuration.
      * @retval 0: Success

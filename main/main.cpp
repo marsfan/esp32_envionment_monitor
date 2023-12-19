@@ -53,12 +53,8 @@ extern "C" void app_main(void) {
     ESP_LOGI(LOG_TAG, "Configuring BME688. Result=%d",
              bme.set_conf(BME68X_OS_2X, BME68X_OS_1X, BME68X_OS_16X,
                           BME68X_FILTER_OFF, BME68X_ODR_NONE));
-    struct bme68x_heatr_conf heater_conf;
-    heater_conf.enable = BME68X_ENABLE;
-    heater_conf.heatr_temp = 300;
-    heater_conf.heatr_dur = 100;
     ESP_LOGI(LOG_TAG, "Setting BME688 Heater Config. Result=%d",
-             bme.set_heater_conf(BME68X_FORCED_MODE, &heater_conf));
+             bme.set_heater_conf_forced(300, 100));
 
     /// Configure VEML
     ESP_ERROR_CHECK(veml.set_configuration());
@@ -74,8 +70,7 @@ extern "C" void app_main(void) {
 
         uint8_t n_fields;
         struct bme68x_data data;
-        const int8_t read_result =
-            bme.forced_measurement(&heater_conf, &data, &n_fields);
+        const int8_t read_result = bme.forced_measurement(&data, &n_fields);
 
         ESP_LOGI(LOG_TAG,
                  "BME688 result=%d, temp=%.2f, pressure=%.2f, "
