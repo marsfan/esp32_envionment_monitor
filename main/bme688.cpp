@@ -6,9 +6,13 @@
 
 #include "bme688.h"
 
+#include <esp_log.h>
+#include <esp_rom_sys.h>
 #include <string.h>
 
 #include "bme68x_sensor_api/bme68x.h"
+
+#define LOG_TAG "BME688"
 
 static void delay(uint32_t period_us, void* intf_ptr);
 
@@ -36,11 +40,11 @@ const char* BME_Err_To_String(const int bme_err_code) {
 }
 
 // See bme688.h for documentation
-Bme688::Bme688(const i2c_port_t i2c_port, const TickType_t wait_time) {
+Bme688::Bme688(const i2c_port_t i2c_port, const TickType_t i2c_wait_time) {
     (void)memset(&this->device, 0, sizeof(bme68x_dev));
 
     this->i2c_port = i2c_port;
-    this->wait_time = wait_time;
+    this->i2c_wait_time = i2c_wait_time;
     this->device.intf = BME68X_I2C_INTF;
     this->device.delay_us = delay;
     this->device.read = i2c_read;
@@ -51,6 +55,10 @@ Bme688::Bme688(const i2c_port_t i2c_port, const TickType_t wait_time) {
              // why the library does not just do that.
 
     this->device.intf_ptr = this;
+
+    (void)memset(&this->heater_conf, 0, sizeof(bme68x_heatr_conf));
+    this->heater_conf.heatr_dur_prof = this->heater_time_profile;
+    this->heater_conf.heatr_temp_prof = this->heater_temp_profile;
 }
 
 // See bme688.h for documentation
@@ -90,6 +98,12 @@ uint32_t Bme688::get_meas_duration(const uint8_t op_mode) {
 }
 
 // See bme688.h for documentation
+uint32_t Bme688::get_parallel_delay_period_us(void) {
+    return this->get_meas_duration(BME68X_PARALLEL_MODE) +
+           this->heater_conf.shared_heatr_dur * 1000;
+}
+
+// See bme688.h for documentation
 int8_t Bme688::get_data(uint8_t op_mode, struct bme68x_data* data,
                         uint8_t* n_data) {
     return bme68x_get_data(op_mode, data, n_data, &this->device);
@@ -122,18 +136,10 @@ int8_t Bme688::get_conf(struct bme68x_conf* conf) {
 }
 
 // See bme688.h for documentation
-int8_t Bme688::set_heater_conf(uint8_t op_mode,
-                               const struct bme68x_heatr_conf* conf) {
-    // Copy last heater config over for later use
-    (void)memcpy(&this->heater_conf, conf, sizeof(bme68x_heatr_conf));
-    return bme68x_set_heatr_conf(op_mode, conf, &this->device);
-}
-
-// See bme688.h for documentation
 int8_t Bme688::set_heater_conf_disabled(uint8_t op_mode) {
     (void)memset(&this->heater_conf, 0, sizeof(bme68x_heatr_conf));
     this->heater_conf.enable = BME68X_DISABLE;
-    return bme68x_set_heatr_conf(op_mode, &this->heater_conf, &this->device);
+    return this->set_heater_conf(op_mode);
 }
 
 // See bme688.h for documentation
@@ -141,8 +147,41 @@ int8_t Bme688::set_heater_conf_forced(uint16_t temp, uint16_t duration) {
     this->heater_conf.enable = BME68X_ENABLE;
     this->heater_conf.heatr_dur = duration;
     this->heater_conf.heatr_temp = temp;
-    return bme68x_set_heatr_conf(BME68X_FORCED_MODE, &this->heater_conf,
-                                 &this->device);
+    return this->set_heater_conf(BME68X_FORCED_MODE);
+}
+
+// See bme688.h for documentation
+int8_t Bme688::set_heater_conf_sequential(uint16_t* temp_profile,
+                                          uint16_t* duration_profile,
+                                          uint8_t num_steps) {
+    int8_t result = BME68X_OK;
+    if (num_steps > 10) {
+        result = BME68X_E_INVALID_LENGTH;
+        ESP_LOGE(LOG_TAG,
+                 "Heater profile has a max of 10 steps. Actual number: %d",
+                 num_steps);
+    } else {
+        // Enable heater.
+        this->heater_conf.enable = BME68X_ENABLE;
+        // Copy profile to internal data.
+        (void)memcpy(this->heater_conf.heatr_temp_prof, temp_profile,
+                     sizeof(uint16_t) * num_steps);
+        (void)memcpy(this->heater_conf.heatr_dur_prof, duration_profile,
+                     sizeof(uint16_t) * num_steps);
+
+        // Shared heating duration in miliseconds
+        // Not sure where the 140 comes from. I'm just copying it from the
+        // parallel mode example.
+        this->heater_conf.shared_heatr_dur =
+            (140 - (this->get_meas_duration(BME68X_PARALLEL_MODE)) / 1000);
+
+        // Save the profile length.
+        this->heater_conf.profile_len = num_steps;
+
+        // Write configuration to the sensor
+        result = this->set_heater_conf(BME68X_PARALLEL_MODE);
+    }
+    return result;
 }
 
 // See bme688.h for documentation
@@ -177,20 +216,44 @@ i2c_port_t Bme688::get_i2c_port(void) {
 }
 
 // See bme688.h for documentation
-TickType_t Bme688::get_wait_time(void) {
-    return this->wait_time;
+TickType_t Bme688::get_i2c_wait_time(void) {
+    return this->i2c_wait_time;
 }
+
+/********************************************************************
+ *                      Class private functions
+ *********************************************************************/
+
+// See bme688.h for documentation
+int8_t Bme688::set_heater_conf(uint8_t op_mode) {
+    return bme68x_set_heatr_conf(op_mode, &this->heater_conf, &this->device);
+}
+
+/********************************************************************
+ *                      File private functions
+ *********************************************************************/
+
 /*!
  * @brief Method for sleeping after an operation.
- * @details Due to the limitations of the ESP32 RTOS, will always sleep for
- * at least 1ms
+ * @details If the delay time is less than 1 ms (i.e 1000 us), the ROM function
+ * esp_rom_delay_us will be used instead. This operates outside normal RTOS
+ * functionality. See https://esp32.com/viewtopic.php?t=880 and
+ * https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/internal-unstable.html?highlight=esp_rom_sys#_CPPv416esp_rom_delay_us8uint32_t
  * @param[in] period_us The period to sleep in microseconds
  * @param[in,out] intf_pointer Pointer for linking interface device
  * descriptors for callbacks
  * */
 static void delay(uint32_t period_us, void* intf_ptr) {
     TickType_t delay_time = 0;
-    if (period_us / 1000 < 1) {
+    if (period_us < 1000) {
+        // TODO: ESP_LOGV (verbose) message for if this is used?
+        // TODO: SHoudl we enter a critical section here to ensure we don't
+        // context
+        // switch?https://docs.espressif.com/projects/esp-idf/en/v5.1.2/esp32/api-reference/system/freertos_idf.html
+        // TODO: Could also look into copying the code from delayMicroseconds in
+        // the arduino HAL.(esp32-hal-misc.c), which seems to use a HW timer and
+        // NOPs to sleep
+        esp_rom_delay_us(period_us);
         delay_time = 1 / portTICK_PERIOD_MS;
     } else {
         delay_time = period_us / 1000 / portTICK_PERIOD_MS;
@@ -216,7 +279,7 @@ int8_t i2c_read(uint8_t reg_addr, uint8_t* reg_data, uint32_t length,
         Bme688* device = (Bme688*)intf_pointer;
         result = i2c_master_write_read_device(
             device->get_i2c_port(), BME68X_I2C_ADDR_HIGH, &reg_addr, 1,
-            reg_data, length, device->get_wait_time());
+            reg_data, length, device->get_i2c_wait_time());
     }
 
     return result != ESP_OK;
@@ -253,7 +316,7 @@ int8_t i2c_write(uint8_t reg_addr, const uint8_t* reg_data, uint32_t length,
         // Send the data
         err = i2c_master_write_to_device(device->get_i2c_port(),
                                          BME68X_I2C_ADDR_HIGH, data, length + 1,
-                                         device->get_wait_time());
+                                         device->get_i2c_wait_time());
     }
     return err;
 }

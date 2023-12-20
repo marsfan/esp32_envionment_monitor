@@ -28,9 +28,9 @@ class Bme688 {
      * @brief Instantiate the device.
      * @param[in] i2c_port The I2C port to use for communicating with the
      * device.
-     * @param[in] wait_time The max wait time after an I2C operation.
+     * @param[in] i2c_wait_time The max wait time after an I2C operation.
      */
-    Bme688(const i2c_port_t i2c_port, const TickType_t wait_time);
+    Bme688(const i2c_port_t i2c_port, const TickType_t i2c_wait_time);
 
     /*!
      * @brief Initialize the sensor.
@@ -82,6 +82,14 @@ class Bme688 {
      * */
     uint32_t get_meas_duration(const uint8_t op_mode);
 
+    /// @brief Get minimum delay period between parallel mode read_result
+    /// @details Between each call to @ref get_data, the systsem should wait at
+    /// least the amount of time that this method returns, to ensure that the
+    /// full sensor reading has been completed.
+    /// @return The delay period in microseconds to wait between each
+    /// measurement.
+    uint32_t get_parallel_delay_period_us(void);
+
     /*!
      * @brief Read the data from the sensor
      * @param[in] op_mode The operating mode of the sensor.
@@ -128,17 +136,6 @@ class Bme688 {
     int8_t get_conf(struct bme68x_conf *conf);
 
     /*!
-     * @brief Set the sensor heating configuration.
-     * @param[in] op_mode THe opearting mode of the sensor.
-     * @param[in] conf The heating configuration to set
-     * @return Result of setting the sensor heater configuration.
-     * @retval 0: Success
-     * @retval <0: Failure
-     * */
-    int8_t set_heater_conf(uint8_t op_mode,
-                           const struct bme68x_heatr_conf *conf);
-
-    /*!
      * @brief Set the heater config to be disabled.
      * @param op_mode The operating mode for the sensor
      * @return Result of setting the sensor heater configuration.
@@ -157,6 +154,26 @@ class Bme688 {
      * @retval <0: Failure
      */
     int8_t set_heater_conf_forced(uint16_t temp, uint16_t duration);
+
+    /*!
+     * @brief Set the heater config for sequential mode.
+     * @details The arrays passed in will be copied to internal variables that
+     * store the profiles. The temp_profile and duration_profile arguments MUST
+     * point to arrays of the same size, and these arrays MUST be 10 or less
+     * element.
+     * @param temp_profile Pointer to an array (max 10 values) of the heater
+     * temperature profile.
+     * @param duration_profile Pointerr to an array (max 10 values) of the
+     * heater time profile
+     * @param num_steps The number of stages (elements) in the temp_profile and
+     * duration_profile arguments.
+     * @return Result of setting the sensor heater configuration.
+     * @retval 0: Success
+     * @retval <0: Failure
+     */
+    int8_t set_heater_conf_sequential(uint16_t *temp_profile,
+                                      uint16_t *duration_profile,
+                                      uint8_t num_steps);
 
     /*!
      * @brief Get the sensor heating configuration.
@@ -191,19 +208,34 @@ class Bme688 {
      * @brief Get the wait time to be used for i2c operations.
      * @return The wait time to be used for i2c operations.
      */
-    TickType_t get_wait_time(void);
+    TickType_t get_i2c_wait_time(void);
 
    private:
     ///@brief I2C port to use
     i2c_port_t i2c_port;
 
     /// @brief max Time to wait after a I2C transation
-    TickType_t wait_time;
+    TickType_t i2c_wait_time;
 
     /// @brief BME68x device structure
     bme68x_dev device;
 
     /// @brief The last heater configuration that was sent.
     bme68x_heatr_conf heater_conf;
+
+    /// @brief Temperature profile for sequence mode
+    uint16_t heater_temp_profile[10];
+
+    /// @brief Time profile for sequence mode.
+    uint16_t heater_time_profile[10];
+
+    /*!
+     * @brief Send the class's heating configuration to the sensor.
+     * @param[in] op_mode The opearting mode of the sensor.
+     * @return Result of setting the sensor heater configuration.
+     * @retval 0: Success
+     * @retval <0: Failure
+     * */
+    int8_t set_heater_conf(uint8_t op_mode);
 };
 #endif  // BME688_H
