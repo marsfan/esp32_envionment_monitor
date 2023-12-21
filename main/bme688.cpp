@@ -24,6 +24,8 @@ int8_t i2c_write(uint8_t reg_addr, const uint8_t* reg_data, uint32_t length,
 // See Bme688.h for documentation
 const char* BME_Err_To_String(const int bme_err_code) {
     switch (bme_err_code) {
+        case BME68X_OK:
+            return "Ok";
         case BME68X_E_NULL_PTR:
             return "Null Pointer";
         case BME68X_E_COM_FAIL:
