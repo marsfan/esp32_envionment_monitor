@@ -12,6 +12,6 @@
 void log_e_on_error(esp_err_t err, const char *const tag,
                     const char *const func, const char *const msg) {
     if (err != ESP_OK) {
-        ESP_LOGE(tag, "Error | %s | %d | %s\n", func, err, msg);
+        ESP_LOGE(tag, "Error | %s | %d | %s", func, err, msg);
     }
 }
