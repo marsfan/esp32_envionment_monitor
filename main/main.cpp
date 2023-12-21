@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "bme688.h"
+#include "bsec/inc/bsec_interface.h"
 #include "driver/i2c.h"
 #include "veml.h"
 
@@ -61,6 +62,8 @@ extern "C" void app_main(void) {
     ESP_LOGI(LOG_TAG, "VEML7700 Gain Option: %d", veml.get_gain());
     ESP_LOGI(LOG_TAG, "VEML7700 Integration Time: %d",
              veml.get_integration_time());
+
+    bsec_init();
 
     /// Continuously read from the sensors and print the result.
     while (true) {

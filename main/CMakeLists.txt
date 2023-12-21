@@ -5,3 +5,9 @@
 #
 idf_component_register(SRCS "bme688.cpp" "common.cpp" "veml.cpp" "main.cpp" "bme68x_sensor_api/bme68x.c"
                     INCLUDE_DIRS ".")
+
+# Add the BSEC library to be linked in
+# TODO: Conditional based on ESP model?
+add_prebuilt_library(bsec "bsec/bin/esp/esp32/libalgobsec.a")
+# Main uses functions from bsec, so link them
+target_link_libraries(${COMPONENT_LIB} PRIVATE bsec)

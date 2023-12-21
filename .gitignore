@@ -1,3 +1,5 @@
 build/
 sdkconfig.old
 docs/
+main/bsec/inc
+main/bsec/bin
