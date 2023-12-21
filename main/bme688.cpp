@@ -34,6 +34,12 @@ const char* BME_Err_To_String(const int bme_err_code) {
             return "Incorrect Length Parameter";
         case BME68X_E_SELF_TEST:
             return "Self Test Fail";
+        case BME68X_W_DEFINE_OP_MODE:
+            return "Define a Operation Mode";
+        case BME68X_W_NO_NEW_DATA:
+            return "No New Data";
+        case BME68X_W_DEFINE_SHD_HEATR_DUR:
+            return "Define the shared heating duration";
         default:
             return "Unknown Error";
     }
