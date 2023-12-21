@@ -12,8 +12,6 @@
 
 #include "bme68x_sensor_api/bme68x.h"
 
-#define LOG_TAG "BME688"
-
 static void delay(uint32_t period_us, void* intf_ptr);
 
 int8_t i2c_read(uint8_t reg_addr, uint8_t* reg_data, uint32_t length,
@@ -157,7 +155,7 @@ int8_t Bme688::set_heater_conf_sequential(uint16_t* temp_profile,
     int8_t result = BME68X_OK;
     if (num_steps > 10) {
         result = BME68X_E_INVALID_LENGTH;
-        ESP_LOGE(LOG_TAG,
+        ESP_LOGE(BME_LOG_TAG,
                  "Heater profile has a max of 10 steps. Actual number: %d",
                  num_steps);
     } else {

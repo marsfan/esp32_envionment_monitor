@@ -16,6 +16,13 @@
 // TODO: Store op_mode in the class so we don't need to keep passing it in to
 // other methods?
 
+#define BME_LOG_TAG "BME688"
+
+#define BME_LOGE_ON_ERR(err) \
+    (ESP_LOGE(BME_LOG_TAG, "Error | | %d | %s"), err, BME_Err_To_String(err));
+
+#define BME_LOGI(tag, format, ...) ESP_LOGI(tag, format, ##__VA_ARGS__)
+
 /// @brief Convert BME688 error codes to strings
 /// @param bme_err_code The error code to convert.
 /// @return String representation of the error code.

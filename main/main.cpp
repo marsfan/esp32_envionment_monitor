@@ -48,13 +48,13 @@ extern "C" void app_main(void) {
     ESP_ERROR_CHECK(configure_i2c());
 
     // Configure BME688
-    ESP_LOGI(LOG_TAG, "Started BME688. Result=%d", bme.init());
-    ESP_LOGI(LOG_TAG, "Starting BME688 Self Test. This takes a few seconds");
-    ESP_LOGI(LOG_TAG, "Finished BME688 self test. Result=%d", bme.self_test());
-    ESP_LOGI(LOG_TAG, "Configuring BME688. Result=%d",
+    BME_LOGI(LOG_TAG, "Started BME688. Result=%d", bme.init());
+    BME_LOGI(LOG_TAG, "Starting BME688 Self Test. This takes a few seconds");
+    BME_LOGI(LOG_TAG, "Finished BME688 self test. Result=%d", bme.self_test());
+    BME_LOGI(LOG_TAG, "Configuring BME688. Result=%d",
              bme.set_conf(BME68X_OS_2X, BME68X_OS_1X, BME68X_OS_16X,
                           BME68X_FILTER_OFF, BME68X_ODR_NONE));
-    ESP_LOGI(LOG_TAG, "Setting BME688 Heater Config. Result=%d",
+    BME_LOGI(LOG_TAG, "Setting BME688 Heater Config. Result=%d",
              bme.set_heater_conf_forced(300, 100));
 
     /// Configure VEML
@@ -75,7 +75,7 @@ extern "C" void app_main(void) {
         struct bme68x_data data;
         const int8_t read_result = bme.forced_measurement(&data, &n_fields);
 
-        ESP_LOGI(LOG_TAG,
+        BME_LOGI(LOG_TAG,
                  "BME688 result=%d, temp=%.2f, pressure=%.2f, "
                  "humidity=%.2f, gas resistance=%.2f, gas index: %d, "
                  "measurement index: %d",
