@@ -12,6 +12,8 @@
 
 #include "bme68x_sensor_api/bme68x.h"
 
+#define BME_LOG_TAG "BME688"
+
 static void delay(uint32_t period_us, void* intf_ptr);
 
 int8_t i2c_read(uint8_t reg_addr, uint8_t* reg_data, uint32_t length,

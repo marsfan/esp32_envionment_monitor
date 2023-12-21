@@ -9,7 +9,6 @@
 #include <string.h>
 
 #include "bme688.h"
-#include "bsec/inc/bsec_interface.h"
 #include "driver/i2c.h"
 #include "veml.h"
 
@@ -48,22 +47,23 @@ extern "C" void app_main(void) {
     ESP_ERROR_CHECK(configure_i2c());
 
     // Configure BME688
-    BME_LOGI(LOG_TAG, "Started BME688. Result=%d", bme.init());
-    BME_LOGI(LOG_TAG, "Starting BME688 Self Test. This takes a few seconds");
-    BME_LOGI(LOG_TAG, "Finished BME688 self test. Result=%d", bme.self_test());
-    BME_LOGI(LOG_TAG, "Configuring BME688. Result=%d",
-             bme.set_conf(BME68X_OS_2X, BME68X_OS_1X, BME68X_OS_16X,
-                          BME68X_FILTER_OFF, BME68X_ODR_NONE));
-    BME_LOGI(LOG_TAG, "Setting BME688 Heater Config. Result=%d",
-             bme.set_heater_conf_forced(300, 100));
+    ESP_LOGI(LOG_TAG, "Starting BME688");
+    BME_LOGE_ON_ERR(LOG_TAG, __func__, "Error Starting BME688", bme.init());
+    ESP_LOGI(LOG_TAG, "Starting BME688 Self Test. This takes a few seconds");
+    BME_LOGE_ON_ERR(LOG_TAG, __func__, "BME688 Self Test Failed",
+                    bme.self_test());
+    ESP_LOGI(LOG_TAG, "Configuring BME688");
+    BME_LOGE_ON_ERR(LOG_TAG, __func__, "Error Configuring BME688",
+                    bme.set_conf(BME68X_OS_2X, BME68X_OS_1X, BME68X_OS_16X,
+                                 BME68X_FILTER_OFF, BME68X_ODR_NONE));
+    BME_LOGE_ON_ERR(LOG_TAG, __func__, "Error Setting BME688 Heater Config",
+                    bme.set_heater_conf_forced(300, 100));
 
     /// Configure VEML
     ESP_ERROR_CHECK(veml.set_configuration());
     ESP_LOGI(LOG_TAG, "VEML7700 Gain Option: %d", veml.get_gain());
     ESP_LOGI(LOG_TAG, "VEML7700 Integration Time: %d",
              veml.get_integration_time());
-
-    bsec_init();
 
     /// Continuously read from the sensors and print the result.
     while (true) {
@@ -75,13 +75,13 @@ extern "C" void app_main(void) {
         struct bme68x_data data;
         const int8_t read_result = bme.forced_measurement(&data, &n_fields);
 
-        BME_LOGI(LOG_TAG,
-                 "BME688 result=%d, temp=%.2f, pressure=%.2f, "
+        ESP_LOGI(LOG_TAG,
+                 "BME688 result=%s, temp=%.2f, pressure=%.2f, "
                  "humidity=%.2f, gas resistance=%.2f, gas index: %d, "
                  "measurement index: %d",
-                 read_result, C_TO_F(data.temperature), data.pressure,
-                 data.humidity, data.gas_resistance, data.gas_index,
-                 data.meas_index);
+                 BME_Err_To_String(read_result), C_TO_F(data.temperature),
+                 data.pressure, data.humidity, data.gas_resistance,
+                 data.gas_index, data.meas_index);
 
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
