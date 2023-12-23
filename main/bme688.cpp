@@ -159,9 +159,9 @@ int8_t Bme688::set_heater_conf_forced(uint16_t temp, uint16_t duration) {
 }
 
 // See bme688.h for documentation
-int8_t Bme688::set_heater_conf_sequential(uint16_t* temp_profile,
-                                          uint16_t* duration_profile,
-                                          uint8_t num_steps) {
+int8_t Bme688::set_heater_conf_parallel(uint16_t* temp_profile,
+                                        uint16_t* duration_profile,
+                                        uint8_t num_steps) {
     int8_t result = BME68X_OK;
     if (num_steps > 10) {
         result = BME68X_E_INVALID_LENGTH;

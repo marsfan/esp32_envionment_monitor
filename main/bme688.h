@@ -200,9 +200,9 @@ class Bme688 {
      * @retval 0: Success
      * @retval <0: Failure
      */
-    int8_t set_heater_conf_sequential(uint16_t *temp_profile,
-                                      uint16_t *duration_profile,
-                                      uint8_t num_steps);
+    int8_t set_heater_conf_parallel(uint16_t *temp_profile,
+                                    uint16_t *duration_profile,
+                                    uint8_t num_steps);
 
     /*!
      * @brief Get the sensor heating configuration.
