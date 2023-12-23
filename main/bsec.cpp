@@ -214,8 +214,9 @@ bsec_library_return_t BSEC::process_data(int64_t curr_time_ns,
         curr_time_ns, n_inputs, inputs);
 
     if (n_inputs > 0) {
-        // TODO: Process data with bsec_do_steps
-        // TODO:Populate output strcutre
+        (void)memset(this->outputs, 0, sizeof(this->outputs));
+        result =
+            bsec_do_steps(inputs, n_inputs, this->outputs, &this->num_outputs);
     }
 
     return result;

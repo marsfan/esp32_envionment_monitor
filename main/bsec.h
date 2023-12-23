@@ -80,5 +80,11 @@ class BSEC : private Bme688 {
     bsec_library_return_t process_data(int64_t curr_time_ns,
                                        struct bme68x_data data,
                                        bsec_bme_settings_t *sensor_settings);
+
+    /// @brief Output data from BSEC
+    bsec_output_t outputs[BSEC_NUMBER_OUTPUTS];
+
+    /// @brief number of outputs from last run.
+    uint8_t num_outputs;
 };
 #endif  // BSEC_H
