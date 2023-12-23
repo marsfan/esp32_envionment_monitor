@@ -5,9 +5,12 @@
  */
 #include "bsec.h"
 
+#include <esp_log.h>
 #include <string.h>
 
 #include "bsec/inc/bsec_interface.h"
+
+#define LOG_TAG "BSEC"
 
 // See bsec.h for documentation
 BSEC::BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time)
@@ -85,5 +88,70 @@ bsec_result_t BSEC::process_data(int64_t timestamp) {
         }
     }
 
+    return result;
+}
+
+int8_t BSEC::configure_sensor_forced(bsec_bme_settings_t *sensor_settings) {
+    int8_t result = BME_OK;
+    struct bme68x_conf conf;
+    result = this->get_conf(&conf);
+    BME_LOGE_ON_ERR(LOG_TAG, __func__, "Failed getting sensor configuration",
+                    result);
+
+    if (result == BME68X_OK) {
+        conf.os_hum = sensor_settings->humidity_oversampling;
+        conf.os_temp = sensor_settings->temperature_oversampling;
+        conf.os_pres = sensor_settings->pressure_oversampling;
+        result = this->set_conf(&conf);
+        BME_LOGE_ON_ERR(LOG_TAG, __func__,
+                        "Failed setting sensor configuration", result);
+    }
+
+    if (result == BME68X_OK) {
+        result =
+            this->set_heater_conf_forced(sensor_settings->heater_temperature,
+                                         sensor_settings->heater_duration);
+        BME_LOGE_ON_ERR(LOG_TAG, __func__,
+                        "Failed setting sensor heater configuration", result);
+    }
+
+    if (result == BME68X_OK) {
+        result = this->set_op_mode(BME68X_FORCED_MODE);
+        BME_LOGE_ON_ERR(LOG_TAG, __func__, "Failed setting sensor op mode",
+                        result);
+    }
+    return result;
+}
+
+int8_t BSEC::configure_sensor_parallel(bsec_bme_settings_t *sensor_settings) {
+    int8_t result = BME_OK;
+    struct bme68x_conf conf;
+    result = this->get_conf(&conf);
+    BME_LOGE_ON_ERR(LOG_TAG, __func__, "Failed getting sensor configuration",
+                    result);
+
+    if (result == BME68X_OK) {
+        conf.os_hum = sensor_settings->humidity_oversampling;
+        conf.os_temp = sensor_settings->temperature_oversampling;
+        conf.os_pres = sensor_settings->pressure_oversampling;
+        result = this->set_conf(&conf);
+        BME_LOGE_ON_ERR(LOG_TAG, __func__,
+                        "Failed setting sensor configuration", result);
+    }
+
+    if (result == BME68X_OK) {
+        result = this->set_heater_conf_parallel(
+            sensor_settings->heater_temperature_profile,
+            sensor_settings->heater_duration_profile,
+            sensor_settings->heater_profile_len);
+        BME_LOGE_ON_ERR(LOG_TAG, __func__,
+                        "Failed setting sensor heater configuration", result);
+    }
+
+    if (result == BME68X_OK) {
+        result = this->set_op_mode(BME68X_PARALLEL_MODE);
+        BME_LOGE_ON_ERR(LOG_TAG, __func__, "Failed setting sensor op mode",
+                        result);
+    }
     return result;
 }
