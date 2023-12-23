@@ -12,6 +12,15 @@
 
 #define LOG_TAG "BSEC"
 
+#define CHECK_INPUT_REQUEST(x, shift) (x & (1 << (shift - 1)))
+
+// FIXME: Make part of constructor?
+#define TEMP_OFFSET 0.0f
+
+static uint8_t add_sig_cond(const int32_t request, const uint8_t input_signal,
+                            const float value, const int64_t time_ns,
+                            const uint8_t n_inputs, bsec_input_t *inputs);
+
 // See bsec.h for documentation
 BSEC::BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time)
     : Bme688(i2c_port, i2c_wait_time) {}
@@ -53,12 +62,13 @@ bsec_library_return_t BSEC::update_subscription(
 }
 
 // See bsec.h for documentation
-bsec_result_t BSEC::process_data(int64_t timestamp) {
+bsec_result_t BSEC::periodic_process(int64_t timestamp_ns) {
     bsec_result_t result = {.integer_result = 0};
     bsec_bme_settings_t sensor_settings;
     (void)memset(&sensor_settings, 0, sizeof(bsec_bme_settings_t));
 
-    result.bsec_result = bsec_sensor_control(timestamp, &sensor_settings);
+    // Update the sensor configuration as requested.
+    result.bsec_result = bsec_sensor_control(timestamp_ns, &sensor_settings);
     if (result.integer_result == 0) {
         switch (sensor_settings.op_mode) {
             case BME68X_FORCED_MODE: {
@@ -75,6 +85,7 @@ bsec_result_t BSEC::process_data(int64_t timestamp) {
         }
     }
 
+    // If requested, read data from the sensor and process it.
     if ((result.integer_result == 0) && sensor_settings.trigger_measurement &&
         (sensor_settings.op_mode != BME68X_SLEEP_MODE)) {
         bme68x_data data[3];
@@ -84,7 +95,14 @@ bsec_result_t BSEC::process_data(int64_t timestamp) {
         // Read data from the sensor
         result.sensor_result =
             this->get_data(sensor_settings.op_mode, data, &n_data);
-        if (result.integer_result == 0) {  // TODO: Send data to be processed
+        if (result.integer_result == 0 && n_data > 0) {
+            for (uint32_t i = 0; i < n_data; i++) {
+                result.bsec_result =
+                    this->process_data(timestamp_ns, data[i], &sensor_settings);
+                if (result.integer_result != 0) {
+                    break;
+                }
+            }
         }
     }
 
@@ -154,4 +172,72 @@ int8_t BSEC::configure_sensor_parallel(bsec_bme_settings_t *sensor_settings) {
                         result);
     }
     return result;
+}
+
+bsec_library_return_t BSEC::process_data(int64_t curr_time_ns,
+                                         struct bme68x_data data,
+                                         bsec_bme_settings_t *sensor_settings) {
+    bsec_library_return_t result = BSEC_OK;
+    bsec_input_t inputs[BSEC_MAX_PHYSICAL_SENSOR];
+    uint8_t n_inputs = 0;
+    (void)memset(inputs, 0, sizeof(bsec_input_t) * BSEC_MAX_PHYSICAL_SENSOR);
+
+    // Add pressure info if requested.
+    n_inputs = add_sig_cond(sensor_settings->process_data, BSEC_INPUT_PRESSURE,
+                            data.pressure, curr_time_ns, n_inputs, inputs);
+
+    // Add humidity info if requested
+    n_inputs = add_sig_cond(sensor_settings->process_data, BSEC_INPUT_HUMIDITY,
+                            data.humidity, curr_time_ns, n_inputs, inputs);
+
+    // Add temp info if requested
+    n_inputs =
+        add_sig_cond(sensor_settings->process_data, BSEC_INPUT_TEMPERATURE,
+                     data.temperature, curr_time_ns, n_inputs, inputs);
+
+    // Add gas resistance if requested
+    n_inputs =
+        add_sig_cond(sensor_settings->process_data, BSEC_INPUT_GASRESISTOR,
+                     data.gas_resistance, curr_time_ns, n_inputs, inputs);
+
+    // Add temp offset if requested
+    n_inputs =
+        add_sig_cond(sensor_settings->process_data, BSEC_INPUT_HEATSOURCE,
+                     TEMP_OFFSET, curr_time_ns, n_inputs, inputs);
+
+    // TODO: BSEC_INPUT_DISABLE_BASELINE_TRACKER
+
+    // TODO: Not 100% sure what this is. Need to check datasheet
+    n_inputs = add_sig_cond(
+        sensor_settings->process_data, BSEC_INPUT_PROFILE_PART,
+        (sensor_settings->op_mode == BME68X_FORCED_MODE) ? 0 : data.gas_index,
+        curr_time_ns, n_inputs, inputs);
+
+    if (n_inputs > 0) {
+        // TODO: Process data with bsec_do_steps
+        // TODO:Populate output strcutre
+    }
+
+    return result;
+}
+
+/// @brief Conditionally add a value to the inputs array
+/// @param request The request bitfield
+/// @param input_signal The signal type to add conditionally
+/// @param value The value to add
+/// @param time_ns Current time in ns
+/// @param n_inputs Current number of inputs
+/// @param inputs The input array
+/// @return The new number of inputs
+// FIXME: Make this part of the class, use members to reduce arguments
+static uint8_t add_sig_cond(const int32_t request, const uint8_t input_signal,
+                            const float value, const int64_t time_ns,
+                            const uint8_t n_inputs, bsec_input_t *inputs) {
+    if (CHECK_INPUT_REQUEST(request, input_signal)) {
+        inputs[n_inputs].sensor_id = input_signal;
+        inputs[n_inputs].signal = value;
+        inputs[n_inputs].time_stamp = time_ns;
+        return n_inputs + 1;
+    }
+    return n_inputs;
 }
