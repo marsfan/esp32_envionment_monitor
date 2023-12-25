@@ -14,19 +14,21 @@
 
 #define CHECK_INPUT_REQUEST(x, shift) (x & (1 << (shift - 1)))
 
-// FIXME: Make part of constructor?
-#define TEMP_OFFSET 0.0f
-
 static uint8_t add_sig_cond(const int32_t request, const uint8_t input_signal,
                             const float value, const int64_t time_ns,
                             const uint8_t n_inputs, bsec_input_t *inputs);
 
 // See bsec.h for documentation
-BSEC::BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time)
-    : Bme688(i2c_port, i2c_wait_time) {}
+BSEC::BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time,
+           float temp_offset)
+    : Bme688(i2c_port, i2c_wait_time) {
+    this->temp_offset = temp_offset;
+}
 
 // See bsec.h for documentation
-bsec_result_t BSEC::init(void) {
+bsec_result_t BSEC::init(
+    const bsec_sensor_configuration_t *const requested_virtual_sensors,
+    const uint8_t n_sensors) {
     bsec_result_t result = {.integer_result = 0};
     result.sensor_result = Bme688::init();
     if (result.sensor_result == BME68X_OK) {
@@ -38,8 +40,8 @@ bsec_result_t BSEC::init(void) {
         // TODO: Load previous library state (if available)
         // Both should probably be stored in flash.
 
-        // TODO: Update subscription at provided sample rate.
-        // Need new float argument of the sample rate
+        result.bsec_result =
+            this->update_subscription(requested_virtual_sensors, n_sensors);
     }
 
     return result;
@@ -53,12 +55,14 @@ bsec_library_return_t BSEC::get_version(bsec_version_t *bsec_version) {
 // See bsec.h for documentation
 bsec_library_return_t BSEC::update_subscription(
     const bsec_sensor_configuration_t *const requested_virtual_sensors,
-    const uint8_t n_requested_virtual_sensors,
-    bsec_sensor_configuration_t *required_sensor_settings,
-    uint8_t *n_required_sensor_settings) {
+    const uint8_t n_requested_virtual_sensors) {
+    bsec_sensor_configuration_t
+        required_sensor_settings[BSEC_MAX_PHYSICAL_SENSOR];
+    uint8_t n_required_sensor_settings = BSEC_MAX_PHYSICAL_SENSOR;
+
     return bsec_update_subscription(
         requested_virtual_sensors, n_requested_virtual_sensors,
-        required_sensor_settings, n_required_sensor_settings);
+        required_sensor_settings, &n_required_sensor_settings);
 }
 
 // See bsec.h for documentation
@@ -107,6 +111,17 @@ bsec_result_t BSEC::periodic_process(int64_t timestamp_ns) {
     }
 
     return result;
+}
+
+void BSEC::get_output(bsec_output_t *outputs, uint8_t *num_outputs) {
+    (void)memset(outputs, 0, sizeof(bsec_output_t) * BSEC_NUMBER_OUTPUTS);
+
+    // Copy outputs to the array
+    (void)memcpy(outputs, this->outputs,
+                 this->num_outputs * sizeof(bsec_output_t));
+
+    // Copy the number of outputs to the num_outputs
+    *num_outputs = this->num_outputs;
 }
 
 int8_t BSEC::configure_sensor_forced(bsec_bme_settings_t *sensor_settings) {
@@ -203,7 +218,7 @@ bsec_library_return_t BSEC::process_data(int64_t curr_time_ns,
     // Add temp offset if requested
     n_inputs =
         add_sig_cond(sensor_settings->process_data, BSEC_INPUT_HEATSOURCE,
-                     TEMP_OFFSET, curr_time_ns, n_inputs, inputs);
+                     this->temp_offset, curr_time_ns, n_inputs, inputs);
 
     // TODO: BSEC_INPUT_DISABLE_BASELINE_TRACKER
 

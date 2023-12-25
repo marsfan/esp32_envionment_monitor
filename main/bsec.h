@@ -26,11 +26,18 @@ class BSEC : private Bme688 {
     /// @brief Instantiate the device for use with the BSEC system
     /// @param i2c_port The I2C port to use for communicating with the sensor.
     /// @param i2c_wait_time THe max wait time after an i2c operation
-    BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time);
+    /// @param temp_offset Offset to to apply to the temperature measurement, to
+    /// correct for sensor or enclosure bias.
+    BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time,
+         float temp_offset);
 
     /// @brief Initialize both the sensor, and the BSEC library.
+    /// @param requested_virtual_sensors Initial virtual sensor subscription
+    /// @param n_sensors The total number of requested virtual sensors
     /// @return Result of the initialization
-    bsec_result_t init(void);
+    bsec_result_t init(
+        const bsec_sensor_configuration_t *const requested_virtual_sensors,
+        const uint8_t n_sensors);
 
     /// @brief Get the version of the BSEC library
     /// @param bsec_version Pointer to a structure to hold the read version.
@@ -48,14 +55,18 @@ class BSEC : private Bme688 {
     /// @return Result of updating the requested virtual sensors
     bsec_library_return_t update_subscription(
         const bsec_sensor_configuration_t *const requested_virtual_sensors,
-        const uint8_t n_requested_virtual_sensors,
-        bsec_sensor_configuration_t *required_sensor_settings,
-        uint8_t *n_required_sensor_settings);
+        const uint8_t n_requested_virtual_sensors);
 
     /// @brief Read data from the sensor and process it
     /// @param timestamp_ns Current system timestamp in microseconds
     /// @return Result of reading and processing the data.
     bsec_result_t periodic_process(int64_t timestamp_ns);
+
+    /// @brief Get the most recent set of output data
+    /// @param outputs The most recent set of output data. Must be an array of
+    /// length BSEC_NUMBER_OUTPUTS
+    /// @param num_outputs The total number of the most recent outputs
+    void get_output(bsec_output_t *outputs, uint8_t *num_outputs);
 
    private:
     /// @brief Configure the sensor for a forced measurement
@@ -86,5 +97,9 @@ class BSEC : private Bme688 {
 
     /// @brief number of outputs from last run.
     uint8_t num_outputs;
+
+    /// @brief  Offset to to apply to the temperature measurement, to
+    /// correct for sensor or enclosure bias.
+    float temp_offset;
 };
 #endif  // BSEC_H
