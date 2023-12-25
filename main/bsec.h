@@ -78,29 +78,31 @@ class BSEC : private Bme688 {
     /// @param num_outputs The total number of the most recent outputs
     void get_output(bsec_output_t *outputs, uint8_t *num_outputs);
 
+    /// @brief Get the timestamp (in ms) for when the next call to
+    /// periodic_process should occur
+    /// @return Timestamp (in ms) to when the next call to periodic_process
+    /// should occur
+    int64_t get_next_call_time(void);
+
    private:
     /// @brief Configure the sensor for a forced measurement
-    /// @param sensor_settings The settings to configure the sensor
     /// @return Result of configuring the sensor.
     /// @retval 0: Success
     /// @retval <0: Fail
-    int8_t configure_sensor_forced(bsec_bme_settings_t *sensor_settings);
+    int8_t configure_sensor_forced(void);
 
     /// @brief Configure the sensor for a parallel measurement
-    /// @param sensor_settings The settings to configure the sensor
     /// @return Result of configuring the sensor.
     /// @retval 0: Success
     /// @retval <0: Fail
-    int8_t configure_sensor_parallel(bsec_bme_settings_t *sensor_settings);
+    int8_t configure_sensor_parallel(void);
 
     /// @brief Process the data and update internal record of most recent data
     /// @param curr_time_ns The current timestamp in nanoseconds
     /// @param data The data from the sensor to process
-    /// @param sensor_settings The requested sensor settings
     /// @return Result of processing the data
     bsec_library_return_t process_data(int64_t curr_time_ns,
-                                       struct bme68x_data data,
-                                       bsec_bme_settings_t *sensor_settings);
+                                       struct bme68x_data data);
 
     /// @brief Output data from BSEC
     bsec_output_t outputs[BSEC_NUMBER_OUTPUTS];
@@ -111,5 +113,8 @@ class BSEC : private Bme688 {
     /// @brief  Offset to to apply to the temperature measurement, to
     /// correct for sensor or enclosure bias.
     float temp_offset;
+
+    /// @brief The most recently read sensor settings.
+    bsec_bme_settings_t sensor_settings;
 };
 #endif  // BSEC_H

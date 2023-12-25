@@ -112,17 +112,17 @@ bsec_result_t BSEC::periodic_process(int64_t timestamp_ns) {
     (void)memset(&sensor_settings, 0, sizeof(bsec_bme_settings_t));
 
     // Update the sensor configuration as requested.
-    result.bsec_result = bsec_sensor_control(timestamp_ns, &sensor_settings);
+    result.bsec_result =
+        bsec_sensor_control(timestamp_ns, &this->sensor_settings);
+
     if (result.integer_result == 0) {
-        switch (sensor_settings.op_mode) {
+        switch (this->sensor_settings.op_mode) {
             case BME68X_FORCED_MODE: {
             }
-                result.sensor_result =
-                    this->configure_sensor_forced(&sensor_settings);
+                result.sensor_result = this->configure_sensor_forced();
                 break;
             case BME68X_PARALLEL_MODE:
-                result.sensor_result =
-                    this->configure_sensor_parallel(&sensor_settings);
+                result.sensor_result = this->configure_sensor_parallel();
                 break;
             case BME68X_SLEEP_MODE:
                 result.sensor_result = this->set_op_mode(BME68X_SLEEP_MODE);
@@ -130,19 +130,19 @@ bsec_result_t BSEC::periodic_process(int64_t timestamp_ns) {
     }
 
     // If requested, read data from the sensor and process it.
-    if ((result.integer_result == 0) && sensor_settings.trigger_measurement &&
-        (sensor_settings.op_mode != BME68X_SLEEP_MODE)) {
+    if ((result.integer_result == 0) &&
+        this->sensor_settings.trigger_measurement &&
+        (this->sensor_settings.op_mode != BME68X_SLEEP_MODE)) {
         bme68x_data data[3];
         (void)memset(data, 0, sizeof(bme68x_data));
         uint8_t n_data = 0;
 
         // Read data from the sensor
         result.sensor_result =
-            this->get_data(sensor_settings.op_mode, data, &n_data);
+            this->get_data(this->sensor_settings.op_mode, data, &n_data);
         if (result.integer_result == 0 && n_data > 0) {
             for (uint32_t i = 0; i < n_data; i++) {
-                result.bsec_result =
-                    this->process_data(timestamp_ns, data[i], &sensor_settings);
+                result.bsec_result = this->process_data(timestamp_ns, data[i]);
                 if (result.integer_result != 0) {
                     break;
                 }
@@ -153,6 +153,7 @@ bsec_result_t BSEC::periodic_process(int64_t timestamp_ns) {
     return result;
 }
 
+// See bsec.h for documentation
 void BSEC::get_output(bsec_output_t *outputs, uint8_t *num_outputs) {
     (void)memset(outputs, 0, sizeof(bsec_output_t) * BSEC_NUMBER_OUTPUTS);
 
@@ -164,7 +165,12 @@ void BSEC::get_output(bsec_output_t *outputs, uint8_t *num_outputs) {
     *num_outputs = this->num_outputs;
 }
 
-int8_t BSEC::configure_sensor_forced(bsec_bme_settings_t *sensor_settings) {
+// See bsec.h for documentation
+int64_t BSEC::get_next_call_time(void) {
+    return this->sensor_settings.next_call;
+}
+
+int8_t BSEC::configure_sensor_forced(void) {
     int8_t result = BME_OK;
     struct bme68x_conf conf;
     result = this->get_conf(&conf);
@@ -172,18 +178,18 @@ int8_t BSEC::configure_sensor_forced(bsec_bme_settings_t *sensor_settings) {
                     result);
 
     if (result == BME68X_OK) {
-        conf.os_hum = sensor_settings->humidity_oversampling;
-        conf.os_temp = sensor_settings->temperature_oversampling;
-        conf.os_pres = sensor_settings->pressure_oversampling;
+        conf.os_hum = this->sensor_settings.humidity_oversampling;
+        conf.os_temp = this->sensor_settings.temperature_oversampling;
+        conf.os_pres = this->sensor_settings.pressure_oversampling;
         result = this->set_conf(&conf);
         BME_LOGE_ON_ERR(LOG_TAG, __func__,
                         "Failed setting sensor configuration", result);
     }
 
     if (result == BME68X_OK) {
-        result =
-            this->set_heater_conf_forced(sensor_settings->heater_temperature,
-                                         sensor_settings->heater_duration);
+        result = this->set_heater_conf_forced(
+            this->sensor_settings.heater_temperature,
+            this->sensor_settings.heater_duration);
         BME_LOGE_ON_ERR(LOG_TAG, __func__,
                         "Failed setting sensor heater configuration", result);
     }
@@ -196,7 +202,7 @@ int8_t BSEC::configure_sensor_forced(bsec_bme_settings_t *sensor_settings) {
     return result;
 }
 
-int8_t BSEC::configure_sensor_parallel(bsec_bme_settings_t *sensor_settings) {
+int8_t BSEC::configure_sensor_parallel(void) {
     int8_t result = BME_OK;
     struct bme68x_conf conf;
     result = this->get_conf(&conf);
@@ -204,9 +210,9 @@ int8_t BSEC::configure_sensor_parallel(bsec_bme_settings_t *sensor_settings) {
                     result);
 
     if (result == BME68X_OK) {
-        conf.os_hum = sensor_settings->humidity_oversampling;
-        conf.os_temp = sensor_settings->temperature_oversampling;
-        conf.os_pres = sensor_settings->pressure_oversampling;
+        conf.os_hum = this->sensor_settings.humidity_oversampling;
+        conf.os_temp = this->sensor_settings.temperature_oversampling;
+        conf.os_pres = this->sensor_settings.pressure_oversampling;
         result = this->set_conf(&conf);
         BME_LOGE_ON_ERR(LOG_TAG, __func__,
                         "Failed setting sensor configuration", result);
@@ -214,9 +220,9 @@ int8_t BSEC::configure_sensor_parallel(bsec_bme_settings_t *sensor_settings) {
 
     if (result == BME68X_OK) {
         result = this->set_heater_conf_parallel(
-            sensor_settings->heater_temperature_profile,
-            sensor_settings->heater_duration_profile,
-            sensor_settings->heater_profile_len);
+            this->sensor_settings.heater_temperature_profile,
+            this->sensor_settings.heater_duration_profile,
+            this->sensor_settings.heater_profile_len);
         BME_LOGE_ON_ERR(LOG_TAG, __func__,
                         "Failed setting sensor heater configuration", result);
     }
@@ -230,42 +236,44 @@ int8_t BSEC::configure_sensor_parallel(bsec_bme_settings_t *sensor_settings) {
 }
 
 bsec_library_return_t BSEC::process_data(int64_t curr_time_ns,
-                                         struct bme68x_data data,
-                                         bsec_bme_settings_t *sensor_settings) {
+                                         struct bme68x_data data) {
     bsec_library_return_t result = BSEC_OK;
     bsec_input_t inputs[BSEC_MAX_PHYSICAL_SENSOR];
     uint8_t n_inputs = 0;
     (void)memset(inputs, 0, sizeof(bsec_input_t) * BSEC_MAX_PHYSICAL_SENSOR);
 
     // Add pressure info if requested.
-    n_inputs = add_sig_cond(sensor_settings->process_data, BSEC_INPUT_PRESSURE,
-                            data.pressure, curr_time_ns, n_inputs, inputs);
+    n_inputs =
+        add_sig_cond(this->sensor_settings.process_data, BSEC_INPUT_PRESSURE,
+                     data.pressure, curr_time_ns, n_inputs, inputs);
 
     // Add humidity info if requested
-    n_inputs = add_sig_cond(sensor_settings->process_data, BSEC_INPUT_HUMIDITY,
-                            data.humidity, curr_time_ns, n_inputs, inputs);
+    n_inputs =
+        add_sig_cond(this->sensor_settings.process_data, BSEC_INPUT_HUMIDITY,
+                     data.humidity, curr_time_ns, n_inputs, inputs);
 
     // Add temp info if requested
     n_inputs =
-        add_sig_cond(sensor_settings->process_data, BSEC_INPUT_TEMPERATURE,
+        add_sig_cond(this->sensor_settings.process_data, BSEC_INPUT_TEMPERATURE,
                      data.temperature, curr_time_ns, n_inputs, inputs);
 
     // Add gas resistance if requested
     n_inputs =
-        add_sig_cond(sensor_settings->process_data, BSEC_INPUT_GASRESISTOR,
+        add_sig_cond(this->sensor_settings.process_data, BSEC_INPUT_GASRESISTOR,
                      data.gas_resistance, curr_time_ns, n_inputs, inputs);
 
     // Add temp offset if requested
     n_inputs =
-        add_sig_cond(sensor_settings->process_data, BSEC_INPUT_HEATSOURCE,
+        add_sig_cond(this->sensor_settings.process_data, BSEC_INPUT_HEATSOURCE,
                      this->temp_offset, curr_time_ns, n_inputs, inputs);
 
     // TODO: BSEC_INPUT_DISABLE_BASELINE_TRACKER
 
     // TODO: Not 100% sure what this is. Need to check datasheet
     n_inputs = add_sig_cond(
-        sensor_settings->process_data, BSEC_INPUT_PROFILE_PART,
-        (sensor_settings->op_mode == BME68X_FORCED_MODE) ? 0 : data.gas_index,
+        this->sensor_settings.process_data, BSEC_INPUT_PROFILE_PART,
+        (this->sensor_settings.op_mode == BME68X_FORCED_MODE) ? 0
+                                                              : data.gas_index,
         curr_time_ns, n_inputs, inputs);
 
     if (n_inputs > 0) {
