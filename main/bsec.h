@@ -80,7 +80,7 @@ class BSEC : private Bme688 {
 
     /// @brief Get the timestamp (in ms) for when the next call to
     /// periodic_process should occur
-    /// @return Timestamp (in ms) to when the next call to periodic_process
+    /// @return Timestamp (in ns) to when the next call to periodic_process
     /// should occur
     int64_t get_next_call_time(void);
 
