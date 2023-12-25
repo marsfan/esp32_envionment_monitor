@@ -16,10 +16,6 @@
 
 #define NUM_NON_SCAN_SENSORS 13
 
-static uint8_t add_sig_cond(const int32_t request, const uint8_t input_signal,
-                            const float value, const int64_t time_ns,
-                            const uint8_t n_inputs, bsec_input_t *inputs);
-
 // See bsec.h for documentation
 BSEC::BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time,
            float temp_offset)
@@ -111,9 +107,12 @@ bsec_result_t BSEC::periodic_process(int64_t timestamp_ns) {
     bsec_bme_settings_t sensor_settings;
     (void)memset(&sensor_settings, 0, sizeof(bsec_bme_settings_t));
 
+    // Update internal current time object
+    this->curr_time_ns = timestamp_ns;
+
     // Update the sensor configuration as requested.
     result.bsec_result =
-        bsec_sensor_control(timestamp_ns, &this->sensor_settings);
+        bsec_sensor_control(this->curr_time_ns, &this->sensor_settings);
 
     if (result.integer_result == 0) {
         switch (this->sensor_settings.op_mode) {
@@ -142,7 +141,7 @@ bsec_result_t BSEC::periodic_process(int64_t timestamp_ns) {
             this->get_data(this->sensor_settings.op_mode, data, &n_data);
         if (result.integer_result == 0 && n_data > 0) {
             for (uint32_t i = 0; i < n_data; i++) {
-                result.bsec_result = this->process_data(timestamp_ns, data[i]);
+                result.bsec_result = this->process_data(data[i]);
                 if (result.integer_result != 0) {
                     break;
                 }
@@ -240,46 +239,40 @@ int8_t BSEC::configure_sensor_parallel(void) {
     return result;
 }
 
-bsec_library_return_t BSEC::process_data(int64_t curr_time_ns,
-                                         struct bme68x_data data) {
+bsec_library_return_t BSEC::process_data(struct bme68x_data data) {
     bsec_library_return_t result = BSEC_OK;
     bsec_input_t inputs[BSEC_MAX_PHYSICAL_SENSOR];
     uint8_t n_inputs = 0;
     (void)memset(inputs, 0, sizeof(bsec_input_t) * BSEC_MAX_PHYSICAL_SENSOR);
 
     // Add pressure info if requested.
-    n_inputs =
-        add_sig_cond(this->sensor_settings.process_data, BSEC_INPUT_PRESSURE,
-                     data.pressure, curr_time_ns, n_inputs, inputs);
+    n_inputs = this->add_sig_cond(BSEC_INPUT_PRESSURE, data.pressure, n_inputs,
+                                  inputs);
 
     // Add humidity info if requested
-    n_inputs =
-        add_sig_cond(this->sensor_settings.process_data, BSEC_INPUT_HUMIDITY,
-                     data.humidity, curr_time_ns, n_inputs, inputs);
+    n_inputs = this->add_sig_cond(BSEC_INPUT_HUMIDITY, data.humidity, n_inputs,
+                                  inputs);
 
     // Add temp info if requested
-    n_inputs =
-        add_sig_cond(this->sensor_settings.process_data, BSEC_INPUT_TEMPERATURE,
-                     data.temperature, curr_time_ns, n_inputs, inputs);
+    n_inputs = this->add_sig_cond(BSEC_INPUT_TEMPERATURE, data.temperature,
+                                  n_inputs, inputs);
 
     // Add gas resistance if requested
-    n_inputs =
-        add_sig_cond(this->sensor_settings.process_data, BSEC_INPUT_GASRESISTOR,
-                     data.gas_resistance, curr_time_ns, n_inputs, inputs);
+    n_inputs = this->add_sig_cond(BSEC_INPUT_GASRESISTOR, data.gas_resistance,
+                                  n_inputs, inputs);
 
     // Add temp offset if requested
-    n_inputs =
-        add_sig_cond(this->sensor_settings.process_data, BSEC_INPUT_HEATSOURCE,
-                     this->temp_offset, curr_time_ns, n_inputs, inputs);
+    n_inputs = this->add_sig_cond(BSEC_INPUT_HEATSOURCE, this->temp_offset,
+                                  n_inputs, inputs);
 
     // TODO: BSEC_INPUT_DISABLE_BASELINE_TRACKER
 
     // TODO: Not 100% sure what this is. Need to check datasheet
-    n_inputs = add_sig_cond(
-        this->sensor_settings.process_data, BSEC_INPUT_PROFILE_PART,
+    n_inputs = this->add_sig_cond(
+        BSEC_INPUT_PROFILE_PART,
         (this->sensor_settings.op_mode == BME68X_FORCED_MODE) ? 0
                                                               : data.gas_index,
-        curr_time_ns, n_inputs, inputs);
+        n_inputs, inputs);
 
     if (n_inputs > 0) {
         /// Set the num outputs to the max we have memory to support.
@@ -293,22 +286,13 @@ bsec_library_return_t BSEC::process_data(int64_t curr_time_ns,
     return result;
 }
 
-/// @brief Conditionally add a value to the inputs array
-/// @param request The request bitfield
-/// @param input_signal The signal type to add conditionally
-/// @param value The value to add
-/// @param time_ns Current time in ns
-/// @param n_inputs Current number of inputs
-/// @param inputs The input array
-/// @return The new number of inputs
-// FIXME: Make this part of the class, use members to reduce arguments
-static uint8_t add_sig_cond(const int32_t request, const uint8_t input_signal,
-                            const float value, const int64_t time_ns,
-                            const uint8_t n_inputs, bsec_input_t *inputs) {
-    if (CHECK_INPUT_REQUEST(request, input_signal)) {
+// See bsec.h for documentation
+uint8_t BSEC::add_sig_cond(const uint8_t input_signal, const float value,
+                           const uint8_t n_inputs, bsec_input_t *inputs) {
+    if (CHECK_INPUT_REQUEST(this->sensor_settings.process_data, input_signal)) {
         inputs[n_inputs].sensor_id = input_signal;
         inputs[n_inputs].signal = value;
-        inputs[n_inputs].time_stamp = time_ns;
+        inputs[n_inputs].time_stamp = this->curr_time_ns;
         return n_inputs + 1;
     }
     return n_inputs;

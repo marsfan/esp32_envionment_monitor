@@ -110,11 +110,19 @@ class BSEC : private Bme688 {
     int8_t configure_sensor_parallel(void);
 
     /// @brief Process the data and update internal record of most recent data
-    /// @param curr_time_ns The current timestamp in nanoseconds
     /// @param data The data from the sensor to process
     /// @return Result of processing the data
-    bsec_library_return_t process_data(int64_t curr_time_ns,
-                                       struct bme68x_data data);
+    bsec_library_return_t process_data(struct bme68x_data data);
+
+    /// @brief Conditionally add a value to the inputs array used for updating a
+    /// subscription
+    /// @param input_signal The signal type to add conditionally
+    /// @param value The value to add
+    /// @param n_inputs Current number of inputs
+    /// @param inputs The input array
+    /// @return The new number of inputs
+    uint8_t add_sig_cond(const uint8_t input_signal, const float value,
+                         const uint8_t n_inputs, bsec_input_t *inputs);
 
     /// @brief Output data from BSEC
     bsec_output_t outputs[BSEC_NUMBER_OUTPUTS];
@@ -128,5 +136,8 @@ class BSEC : private Bme688 {
 
     /// @brief The most recently read sensor settings.
     bsec_bme_settings_t sensor_settings;
+
+    /// @brief Current periodic_processing iteration time (in ns)
+    int64_t curr_time_ns;
 };
 #endif  // BSEC_H
