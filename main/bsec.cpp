@@ -277,6 +277,9 @@ bsec_library_return_t BSEC::process_data(int64_t curr_time_ns,
         curr_time_ns, n_inputs, inputs);
 
     if (n_inputs > 0) {
+        /// Set the num outputs to the max we have memory to support.
+        // See 3.3.1.4 in the integration guide
+        this->num_outputs = BSEC_NUMBER_OUTPUTS;
         (void)memset(this->outputs, 0, sizeof(this->outputs));
         result =
             bsec_do_steps(inputs, n_inputs, this->outputs, &this->num_outputs);
