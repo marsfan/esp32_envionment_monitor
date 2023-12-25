@@ -8,8 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "bme688.h"
+#include "bsec.h"
 #include "driver/i2c.h"
+#include "esp_timer.h"
 #include "veml.h"
 
 #define LOG_TAG "app_main"  /// Name for logging
@@ -25,7 +26,7 @@
 #define I2C_TIMEOUT (1000 / portTICK_PERIOD_MS)  /// I2C Transaction Timeout
 
 Veml7700 veml(I2C_MASTER_PORT, I2C_TIMEOUT);
-Bme688 bme(I2C_MASTER_PORT, I2C_TIMEOUT);
+BSEC bsec(I2C_MASTER_PORT, I2C_TIMEOUT, 0.0f);
 
 static esp_err_t configure_i2c(void) {
     i2c_config_t i2c_config = {
@@ -46,43 +47,42 @@ extern "C" void app_main(void) {
     ESP_LOGI(LOG_TAG, "Starting System Up");
     ESP_ERROR_CHECK(configure_i2c());
 
-    // Configure BME688
-    ESP_LOGI(LOG_TAG, "Starting BME688");
-    BME_LOGE_ON_ERR(LOG_TAG, __func__, "Error Starting BME688", bme.init());
-    ESP_LOGI(LOG_TAG, "Starting BME688 Self Test. This takes a few seconds");
-    BME_LOGE_ON_ERR(LOG_TAG, __func__, "BME688 Self Test Failed",
-                    bme.self_test());
-    ESP_LOGI(LOG_TAG, "Configuring BME688");
-    BME_LOGE_ON_ERR(LOG_TAG, __func__, "Error Configuring BME688",
-                    bme.set_conf(BME68X_OS_2X, BME68X_OS_1X, BME68X_OS_16X,
-                                 BME68X_FILTER_OFF, BME68X_ODR_NONE));
-    BME_LOGE_ON_ERR(LOG_TAG, __func__, "Error Setting BME688 Heater Config",
-                    bme.set_heater_conf_forced(300, 100));
+    // Configure BSEC library.
+    ESP_LOGI(LOG_TAG, "Starting BSEC. Result=%lld", bsec.init().integer_result);
+    ESP_LOGI(LOG_TAG, "Setting subscription. Result=%d",
+             bsec.subscribe_all_non_scan(BSEC_SAMPLE_RATE_LP));
 
-    /// Configure VEML
+    // Configure VEML
     ESP_ERROR_CHECK(veml.set_configuration());
     ESP_LOGI(LOG_TAG, "VEML7700 Gain Option: %d", veml.get_gain());
     ESP_LOGI(LOG_TAG, "VEML7700 Integration Time: %d",
              veml.get_integration_time());
 
-    /// Continuously read from the sensors and print the result.
+    // Continuously read from the sensors and print the result.
     while (true) {
+        // Run the BSEC periodic processing functionality.
+        ESP_LOGI(
+            LOG_TAG, "Periodic Process. Result=%lld",
+            bsec.periodic_process(esp_timer_get_time() * 1000).integer_result);
+
+        // Read the data from the last periodic processing run.
+        uint8_t num_output = 0;
+        bsec_output_t outputs[BSEC_NUMBER_OUTPUTS];
+        bsec.get_output(outputs, &num_output);
+        for (int i = 0; i < num_output; i++) {
+            ESP_LOGI(LOG_TAG, "Output num=%d, type=%d, acc=%d, value=%f", i,
+                     outputs[i].sensor_id, outputs[i].accuracy,
+                     outputs[i].signal);
+        }
+
+        // Read and log the ambient light level
         ESP_LOGI(LOG_TAG, "ALS: %d, White: %d, lux: %f",
                  veml.get_ambient_level(), veml.get_white_level(),
                  veml.get_lux());
 
-        uint8_t n_fields;
-        struct bme68x_data data;
-        const int8_t read_result = bme.forced_measurement(&data, &n_fields);
-
-        ESP_LOGI(LOG_TAG,
-                 "BME688 result=%s, temp=%.2f, pressure=%.2f, "
-                 "humidity=%.2f, gas resistance=%.2f, gas index: %d, "
-                 "measurement index: %d",
-                 BME_Err_To_String(read_result), C_TO_F(data.temperature),
-                 data.pressure, data.humidity, data.gas_resistance,
-                 data.gas_index, data.meas_index);
-
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        // Calculate time to sleep until next periodic processing cycle.
+        int64_t remaining_time =
+            (bsec.get_next_call_time() / 1000) - esp_timer_get_time();
+        vTaskDelay(remaining_time / 1000 / portTICK_PERIOD_MS);
     }
 }

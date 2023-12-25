@@ -8,6 +8,13 @@
 #include "bme688.h"
 #include "bsec/inc/bsec_datatypes.h"
 
+// TODO: Logging/reporting for error messages.
+// TODO: Support for ULP ON Demand sampling
+// TODO: Support storing and loading state and configuration from flash
+// TODO: Periodic_process skips over if too early?
+// TODO: Better functionality for reading outputs?
+// Perhaps a struct of all possible outputs and whether or not they are valid?
+
 /// @brief Result of initializing both sensor and bsec.
 typedef union {
     struct {
