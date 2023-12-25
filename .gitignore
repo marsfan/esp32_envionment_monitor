@@ -3,3 +3,4 @@ sdkconfig.old
 docs/
 main/bsec/inc
 main/bsec/bin
+main/wifi_config.h
