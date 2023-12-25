@@ -14,6 +14,8 @@
 
 #define CHECK_INPUT_REQUEST(x, shift) (x & (1 << (shift - 1)))
 
+#define NUM_NON_SCAN_SENSORS 13
+
 static uint8_t add_sig_cond(const int32_t request, const uint8_t input_signal,
                             const float value, const int64_t time_ns,
                             const uint8_t n_inputs, bsec_input_t *inputs);
@@ -26,9 +28,7 @@ BSEC::BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time,
 }
 
 // See bsec.h for documentation
-bsec_result_t BSEC::init(
-    const bsec_sensor_configuration_t *const requested_virtual_sensors,
-    const uint8_t n_sensors) {
+bsec_result_t BSEC::init(void) {
     bsec_result_t result = {.integer_result = 0};
     result.sensor_result = Bme688::init();
     if (result.sensor_result == BME68X_OK) {
@@ -39,7 +39,18 @@ bsec_result_t BSEC::init(
         // TODO: Load library config (if available)
         // TODO: Load previous library state (if available)
         // Both should probably be stored in flash.
+    }
 
+    return result;
+}
+
+// See bsec.h for documentation
+bsec_result_t BSEC::init(
+    const bsec_sensor_configuration_t *const requested_virtual_sensors,
+    const uint8_t n_sensors) {
+    bsec_result_t result = this->init();
+
+    if (result.integer_result == 0) {
         result.bsec_result =
             this->update_subscription(requested_virtual_sensors, n_sensors);
     }
@@ -63,8 +74,37 @@ bsec_library_return_t BSEC::update_subscription(
     return bsec_update_subscription(
         requested_virtual_sensors, n_requested_virtual_sensors,
         required_sensor_settings, &n_required_sensor_settings);
-}
+};
 
+// See bsec.h for documentation
+bsec_library_return_t BSEC::subscribe_all_non_scan(float sample_rate) {
+    bsec_library_return_t result = BSEC_OK;
+
+    const bsec_sensor_configuration_t requested_sensors[NUM_NON_SCAN_SENSORS] =
+        {{.sample_rate = sample_rate, .sensor_id = BSEC_OUTPUT_RAW_TEMPERATURE},
+         {.sample_rate = sample_rate, .sensor_id = BSEC_OUTPUT_RAW_PRESSURE},
+         {.sample_rate = sample_rate, .sensor_id = BSEC_OUTPUT_RAW_HUMIDITY},
+         {.sample_rate = sample_rate, .sensor_id = BSEC_OUTPUT_RAW_GAS},
+         {.sample_rate = sample_rate, .sensor_id = BSEC_OUTPUT_IAQ},
+         {.sample_rate = sample_rate, .sensor_id = BSEC_OUTPUT_STATIC_IAQ},
+         {.sample_rate = sample_rate, .sensor_id = BSEC_OUTPUT_CO2_EQUIVALENT},
+         {.sample_rate = sample_rate,
+          .sensor_id = BSEC_OUTPUT_BREATH_VOC_EQUIVALENT},
+         {.sample_rate = sample_rate,
+          .sensor_id = BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE},
+         {.sample_rate = sample_rate,
+          .sensor_id = BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY},
+         {.sample_rate = sample_rate,
+          .sensor_id = BSEC_OUTPUT_STABILIZATION_STATUS},
+         {.sample_rate = sample_rate, .sensor_id = BSEC_OUTPUT_RUN_IN_STATUS},
+         {.sample_rate = sample_rate, .sensor_id = BSEC_OUTPUT_GAS_PERCENTAGE}
+
+        };
+
+    this->update_subscription(requested_sensors, NUM_NON_SCAN_SENSORS);
+
+    return result;
+}
 // See bsec.h for documentation
 bsec_result_t BSEC::periodic_process(int64_t timestamp_ns) {
     bsec_result_t result = {.integer_result = 0};

@@ -31,7 +31,12 @@ class BSEC : private Bme688 {
     BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time,
          float temp_offset);
 
-    /// @brief Initialize both the sensor, and the BSEC library.
+    /// @brief Initialize BSEC and the sensor
+    /// @return Result of the initialization.
+    bsec_result_t init(void);
+
+    /// @brief Initialize both the sensor, and the BSEC library, and subscribe
+    /// to inputs.
     /// @param requested_virtual_sensors Initial virtual sensor subscription
     /// @param n_sensors The total number of requested virtual sensors
     /// @return Result of the initialization
@@ -56,6 +61,11 @@ class BSEC : private Bme688 {
     bsec_library_return_t update_subscription(
         const bsec_sensor_configuration_t *const requested_virtual_sensors,
         const uint8_t n_requested_virtual_sensors);
+
+    /// @brief Subscribe to all non gas-scan mode virtual sensors.
+    /// @param refresh_rate The refresh rate to subscribe all sensors to
+    /// @return Result of subscribing to the sensors.
+    bsec_library_return_t subscribe_all_non_scan(float sample_rate);
 
     /// @brief Read data from the sensor and process it
     /// @param timestamp_ns Current system timestamp in microseconds
