@@ -82,7 +82,7 @@ extern "C" void app_main(void) {
 
         // Calculate time to sleep until next periodic processing cycle.
         int64_t remaining_time =
-            (bsec.get_next_call_time() / 1000) - esp_timer_get_time();
+            bsec.get_next_call_time_us() - esp_timer_get_time();
         vTaskDelay(remaining_time / 1000 / portTICK_PERIOD_MS);
     }
 }

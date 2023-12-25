@@ -85,11 +85,16 @@ class BSEC : private Bme688 {
     /// @param num_outputs The total number of the most recent outputs
     void get_output(bsec_output_t *outputs, uint8_t *num_outputs);
 
-    /// @brief Get the timestamp (in ms) for when the next call to
+    /// @brief Get the timestamp (in ns) for when the next call to
     /// periodic_process should occur
     /// @return Timestamp (in ns) to when the next call to periodic_process
     /// should occur
     int64_t get_next_call_time(void);
+
+    /// @brief Get the next call time in microseconds
+    /// @return Time at which periodic_processing should be called, in
+    /// microseconds
+    int64_t get_next_call_time_us(void);
 
    private:
     /// @brief Configure the sensor for a forced measurement

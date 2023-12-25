@@ -170,6 +170,11 @@ int64_t BSEC::get_next_call_time(void) {
     return this->sensor_settings.next_call;
 }
 
+// See bsec.h for documentation
+int64_t BSEC::get_next_call_time_us(void) {
+    return this->get_next_call_time() / 1000;
+}
+
 int8_t BSEC::configure_sensor_forced(void) {
     int8_t result = BME_OK;
     struct bme68x_conf conf;
