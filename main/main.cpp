@@ -13,7 +13,7 @@
 #include "esp_timer.h"
 #include "veml.h"
 
-#define LOG_TAG "app_main"  /// Name for logging
+#define I2C_TASK_NAME "i2c_sensor_task"  /// Name for logging
 
 #define C_TO_F(celsius) \
     ((celsius * 9 / 5) + 32)  /// Convert Celsius to Fahrenheit
@@ -43,26 +43,28 @@ static esp_err_t configure_i2c(void) {
     return i2c_driver_install(I2C_MASTER_PORT, i2c_config.mode, 0, 0, 0);
 }
 
-extern "C" void app_main(void) {
-    ESP_LOGI(LOG_TAG, "Starting System Up");
+/// @brief The task for reading data from the i2c sensors.
+void i2c_sensor_task(void* taskParams) {
+    ESP_LOGI(I2C_TASK_NAME, "Starting I2C Task Up");
     ESP_ERROR_CHECK(configure_i2c());
 
     // Configure BSEC library.
-    ESP_LOGI(LOG_TAG, "Starting BSEC. Result=%lld", bsec.init().integer_result);
-    ESP_LOGI(LOG_TAG, "Setting subscription. Result=%d",
+    ESP_LOGI(I2C_TASK_NAME, "Starting BSEC. Result=%lld",
+             bsec.init().integer_result);
+    ESP_LOGI(I2C_TASK_NAME, "Setting subscription. Result=%d",
              bsec.subscribe_all_non_scan(BSEC_SAMPLE_RATE_LP));
 
     // Configure VEML
     ESP_ERROR_CHECK(veml.set_configuration());
-    ESP_LOGI(LOG_TAG, "VEML7700 Gain Option: %d", veml.get_gain());
-    ESP_LOGI(LOG_TAG, "VEML7700 Integration Time: %d",
+    ESP_LOGI(I2C_TASK_NAME, "VEML7700 Gain Option: %d", veml.get_gain());
+    ESP_LOGI(I2C_TASK_NAME, "VEML7700 Integration Time: %d",
              veml.get_integration_time());
 
     // Continuously read from the sensors and print the result.
     while (true) {
         // Run the BSEC periodic processing functionality.
         ESP_LOGI(
-            LOG_TAG, "Periodic Process. Result=%lld",
+            I2C_TASK_NAME, "Periodic Process. Result=%lld",
             bsec.periodic_process(esp_timer_get_time() * 1000).integer_result);
 
         // Read the data from the last periodic processing run.
@@ -70,19 +72,29 @@ extern "C" void app_main(void) {
         bsec_output_t outputs[BSEC_NUMBER_OUTPUTS];
         bsec.get_output(outputs, &num_output);
         for (int i = 0; i < num_output; i++) {
-            ESP_LOGI(LOG_TAG, "Output num=%d, type=%d, acc=%d, value=%f", i,
-                     outputs[i].sensor_id, outputs[i].accuracy,
+            ESP_LOGI(I2C_TASK_NAME, "Output num=%d, type=%d, acc=%d, value=%f",
+                     i, outputs[i].sensor_id, outputs[i].accuracy,
                      outputs[i].signal);
         }
 
         // Read and log the ambient light level
-        ESP_LOGI(LOG_TAG, "ALS: %d, White: %d, lux: %f",
+        ESP_LOGI(I2C_TASK_NAME, "ALS: %d, White: %d, lux: %f",
                  veml.get_ambient_level(), veml.get_white_level(),
                  veml.get_lux());
 
         // Calculate time to sleep until next periodic processing cycle.
         int64_t remaining_time =
             bsec.get_next_call_time_us() - esp_timer_get_time();
+        ESP_LOGI(I2C_TASK_NAME, "High Water Mark: %d",
+                 uxTaskGetStackHighWaterMark(NULL));
+        // FIXME: Use xTaskDelayUntil instead?
         vTaskDelay(remaining_time / 1000 / portTICK_PERIOD_MS);
     }
+}
+
+extern "C" void app_main(void) {
+    static uint8_t ucParameterToPass;
+    TaskHandle_t i2c_task_handle;
+    xTaskCreate(i2c_sensor_task, "I2C_SENSOR_TASK", 1024, &ucParameterToPass,
+                tskIDLE_PRIORITY, &i2c_task_handle);
 }
