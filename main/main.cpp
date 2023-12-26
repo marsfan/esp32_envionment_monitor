@@ -8,11 +8,17 @@
 #include <stdio.h>
 #include <string.h>
 
+// Used for sensor interfacing.
 #include "bsec.h"
 #include "driver/i2c.h"
 #include "esp_timer.h"
 #include "veml.h"
 
+// Used for WiFi stuff
+#include "wifi_config.h"
+#include "wifi_network.h"
+
+// Tags for logging
 #define I2C_TASK_NAME "i2c_sensor_task"  /// Name for logging
 
 #define C_TO_F(celsius) \
@@ -27,7 +33,21 @@
 
 Veml7700 veml(I2C_MASTER_PORT, I2C_TIMEOUT);
 BSEC bsec(I2C_MASTER_PORT, I2C_TIMEOUT, 0.0f);
+WiFiNetwork wifi;
 
+/*=============================================
+ *   Function Delcarations
+ *============================================*/
+
+static esp_err_t configure_i2c(void);
+static void i2c_sensor_task(void* taskParam);
+
+/*=============================================
+ *   Function Definitions
+ *============================================*/
+
+/// @brief Configure the I2C bus
+/// @return Error code from configuring I2C bus.
 static esp_err_t configure_i2c(void) {
     i2c_config_t i2c_config = {
         .mode = I2C_MODE_MASTER,
@@ -44,7 +64,8 @@ static esp_err_t configure_i2c(void) {
 }
 
 /// @brief The task for reading data from the i2c sensors.
-void i2c_sensor_task(void* taskParams) {
+/// @param taskParam Parameters for the task. Currently unused
+static void i2c_sensor_task(void* taskParams) {
     ESP_LOGI(I2C_TASK_NAME, "Starting I2C Task Up");
     ESP_ERROR_CHECK(configure_i2c());
 
@@ -92,9 +113,17 @@ void i2c_sensor_task(void* taskParams) {
     }
 }
 
+/// @brief Main task function.
 extern "C" void app_main(void) {
-    static uint8_t ucParameterToPass;
-    TaskHandle_t i2c_task_handle;
-    xTaskCreate(i2c_sensor_task, "I2C_SENSOR_TASK", 1024, &ucParameterToPass,
-                tskIDLE_PRIORITY, &i2c_task_handle);
+    // static uint8_t ucParameterToPass;
+    // TaskHandle_t i2c_task_handle;
+    // xTaskCreate(i2c_sensor_task, "I2C_SENSOR_TASK", 1024, &ucParameterToPass,
+    //             tskIDLE_PRIORITY, &i2c_task_handle);
+
+    // Initialize the WiFi Connection.
+    ESP_ERROR_CHECK(wifi.init());
+    // Scan for and print found networks
+    ESP_ERROR_CHECK(wifi.scan_for_networks());
+    // Connect to specific wifi network
+    ESP_ERROR_CHECK(wifi.connect_to_ap(WIFI_SSID, WIFI_PASSWORD));
 }
