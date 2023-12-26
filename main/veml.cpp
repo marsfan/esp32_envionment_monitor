@@ -52,7 +52,7 @@ esp_err_t Veml7700::get_configuration(void) {
     esp_err_t err =
         this->read_from_reg(VEML_CONFIG_REG, &this->configuration.regs_16bit);
     log_e_on_error(err, VEML_TAG, __func__,
-                   "Failed reading VEMP7700 Configuration Register");
+                   "Failed reading VEML7700 Configuration Register");
     return err;
 }
 

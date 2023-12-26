@@ -15,10 +15,13 @@
         "semphr.h": "c"
     },
     "cSpell.words": [
-        "veml",
+        "bsec",
         "ESP_LOGI",
         "GPIO",
-        "SCLK"
+        "HEATR",
+        "netif",
+        "SCLK",
+        "veml"
     ],
     "idf.flashType": "UART"
 }
