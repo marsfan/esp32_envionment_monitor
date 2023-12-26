@@ -51,6 +51,9 @@ esp_err_t WiFiNetwork::init(void) {
 
     // Initialize WiFi
     if (result == ESP_OK) {
+        // Init WiFi system as a station
+        this->netif = esp_netif_create_default_wifi_sta();
+
         result = esp_wifi_init(&this->init_config);
         LOGE_ON_ERROR(WIFI_LOG_TAG, __func__, "Failed Initializing WiFi",
                       result);

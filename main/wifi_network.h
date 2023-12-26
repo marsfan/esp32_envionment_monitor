@@ -68,6 +68,9 @@ class WiFiNetwork {
 
     /// @brief Current number of retries for connecting to a network.
     uint8_t connection_retry_count;
+
+    // Pointer to the network interface structure.
+    esp_netif_t *netif;
 };
 
 #endif  // NETWORK_H
