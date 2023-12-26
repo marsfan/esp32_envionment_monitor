@@ -9,6 +9,13 @@
 #define COMMON_H
 
 #include <esp_err.h>
+#include <esp_log.h>
+
+#define LOGE_ON_ERROR(tag, func, msg, err)                                \
+    if (err != ESP_OK) {                                                  \
+        ESP_LOGE(tag, "Error | %s | %s | %s", func, esp_err_to_name(err), \
+                 msg);                                                    \
+    }
 
 /*!
  * @brief Print to log, but only on an error.
