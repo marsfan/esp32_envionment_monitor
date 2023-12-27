@@ -5,6 +5,9 @@
  */
 #ifndef BSEC_H
 #define BSEC_H
+#include <assert.h>
+#include <stdbool.h>
+
 #include "bme688.h"
 #include "bsec/inc/bsec_datatypes.h"
 
@@ -26,6 +29,52 @@ typedef union {
                               ///< on success
 
 } bsec_result_t;
+
+/// @brief Special version of bsec_output_t
+/// @details This contains almost the same data as bsec_output_t, but with the
+/// additional benefit of also having a .valid member to indicate if the given
+/// output signal was provided at the most recent periodic processing iteration
+/// See the documentation for bsec_output_t for further details
+typedef struct {
+    int64_t time_stamp;         ///< Time stamp (in ns) of the signal generation
+    float signal;               ///< The value of the output;
+    uint8_t signal_dimensions;  ///< Reserved for future use
+    uint8_t accuracy;           ///< Accuracy indication of the data
+    bool valid;  ///< Indication that the data in the struct is valid
+
+} bsec_virtual_sensor_data_t;
+
+/// @brief Well-structured collection of BSEC virtual sensors
+/// @details This is used to provide the same information as in the normal
+/// output array, except in a more well-formatted form, so finding the correct
+/// sensor output does not require searching through the array
+/// @ref bsec_virtual_sensor_t for documentation on the virtual sensors
+typedef struct {
+    bsec_virtual_sensor_data_t iaq;            ///< Indoor air quality
+    bsec_virtual_sensor_data_t static_iaq;     ///< Unscaled indoor air quality
+    bsec_virtual_sensor_data_t co2_eq;         ///< Equivlent CO2 estimate (ppm)
+    bsec_virtual_sensor_data_t breath_voc_eq;  ///< Breath VOC estimate (ppm)
+    bsec_virtual_sensor_data_t raw_temp;       ///< Raw temperature (degrees C)
+    bsec_virtual_sensor_data_t raw_pressure;   ///< Raw pressure (Pa)
+    bsec_virtual_sensor_data_t raw_humidity;   ///< Raw humidity (%)
+    bsec_virtual_sensor_data_t raw_gas;        ///< Raw gas sensor (Ohm)
+    bsec_virtual_sensor_data_t stabilization_status;  ///< Stabilization status
+    bsec_virtual_sensor_data_t run_in_status;         ///< Sensor Run in status
+    bsec_virtual_sensor_data_t compensated_temp;  ///< Heat Compensated temp (C)
+    bsec_virtual_sensor_data_t
+        compensated_humidity;  ///< Heat Compensated Humidity (C)
+    bsec_virtual_sensor_data_t
+        gas_percentage;  ///< Percentage of min/max filter gas (%)
+    bsec_virtual_sensor_data_t gas_estimate_1;  ///< Gas channel 1 estimate
+    bsec_virtual_sensor_data_t gas_estimate_2;  ///< Gas channel 2 estimate
+    bsec_virtual_sensor_data_t gas_estimate_3;  ///< Gas channel 3 estimate
+    bsec_virtual_sensor_data_t gas_estimate_4;  ///< Gas channel 4 estimate
+    bsec_virtual_sensor_data_t raw_gas_index;   ///< gas heater profile index.
+} bsec_structured_outputs_t;
+
+static_assert((BSEC_NUMBER_OUTPUTS - 1) == (sizeof(bsec_structured_outputs_t) /
+                                            sizeof(bsec_virtual_sensor_data_t)),
+              "Incorrect number of entires for sensor data");
 
 /// @brief BSEC Implementation in C++
 class BSEC : private Bme688 {
@@ -85,6 +134,11 @@ class BSEC : private Bme688 {
     /// @param num_outputs The total number of the most recent outputs
     void get_output(bsec_output_t *outputs, uint8_t *num_outputs);
 
+    // TODO: Update docs when this is thread safe
+    /// @brief Get the most recent set of output data from the class
+    /// @param output_data Pointer to hold the output data.
+    void get_output_data(bsec_structured_outputs_t *output_data);
+
     /// @brief Get the timestamp (in ns) for when the next call to
     /// periodic_process should occur
     /// @return Timestamp (in ns) to when the next call to periodic_process
@@ -124,11 +178,21 @@ class BSEC : private Bme688 {
     uint8_t add_sig_cond(const uint8_t input_signal, const float value,
                          const uint8_t n_inputs, bsec_input_t *inputs);
 
+    // TODO: Update docs once it is thread safe
+    /// @brief Update the outputs structure with newly read sensor data
+    /// @param outputs The array of output data from the BSEC library
+    /// @param num_outputs The number of entries in the output array
+    void update_output_structure(bsec_output_t *outputs,
+                                 const uint8_t num_outputs);
+
     /// @brief Output data from BSEC
     bsec_output_t outputs[BSEC_NUMBER_OUTPUTS];
 
     /// @brief number of outputs from last run.
     uint8_t num_outputs;
+
+    /// @brief Output data from BSEC
+    bsec_structured_outputs_t outputs_s;
 
     /// @brief  Offset to to apply to the temperature measurement, to
     /// correct for sensor or enclosure bias.

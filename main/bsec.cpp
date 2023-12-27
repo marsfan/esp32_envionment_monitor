@@ -165,6 +165,13 @@ void BSEC::get_output(bsec_output_t *outputs, uint8_t *num_outputs) {
 }
 
 // See bsec.h for documentation
+void BSEC::get_output_data(bsec_structured_outputs_t *output_data) {
+    // TODO: Mutex to make it thread safe with a mutex
+    (void)memcpy(output_data, &this->outputs_s,
+                 sizeof(bsec_structured_outputs_t));
+}
+
+// See bsec.h for documentation
 int64_t BSEC::get_next_call_time(void) {
     return this->sensor_settings.next_call;
 }
@@ -281,6 +288,8 @@ bsec_library_return_t BSEC::process_data(struct bme68x_data data) {
         (void)memset(this->outputs, 0, sizeof(this->outputs));
         result =
             bsec_do_steps(inputs, n_inputs, this->outputs, &this->num_outputs);
+        /// Update the output structure
+        this->update_output_structure(this->outputs, this->num_outputs);
     }
 
     return result;
@@ -296,4 +305,86 @@ uint8_t BSEC::add_sig_cond(const uint8_t input_signal, const float value,
         return n_inputs + 1;
     }
     return n_inputs;
+}
+
+// See bsec.h for documentation
+void BSEC::update_output_structure(bsec_output_t *outputs,
+                                   const uint8_t num_outputs) {
+    (void)memset(&this->outputs_s, 0, sizeof(bsec_structured_outputs_t));
+    for (int i = 0; i < num_outputs; i++) {
+        bsec_output_t output = outputs[i];
+        bsec_virtual_sensor_data_t *data = NULL;
+
+        // Get pointer to correct part of struct.
+        switch (output.sensor_id) {
+            case BSEC_OUTPUT_IAQ:
+                data = &this->outputs_s.iaq;
+                break;
+            case BSEC_OUTPUT_STATIC_IAQ:
+                data = &this->outputs_s.static_iaq;
+                break;
+            case BSEC_OUTPUT_CO2_EQUIVALENT:
+                data = &this->outputs_s.co2_eq;
+                break;
+            case BSEC_OUTPUT_BREATH_VOC_EQUIVALENT:
+                data = &this->outputs_s.breath_voc_eq;
+                break;
+            case BSEC_OUTPUT_RAW_TEMPERATURE:
+                data = &this->outputs_s.raw_temp;
+                break;
+            case BSEC_OUTPUT_RAW_PRESSURE:
+                data = &this->outputs_s.raw_pressure;
+                break;
+            case BSEC_OUTPUT_RAW_HUMIDITY:
+                data = &this->outputs_s.raw_pressure;
+                break;
+            case BSEC_OUTPUT_RAW_GAS:
+                data = &this->outputs_s.raw_gas;
+                break;
+            case BSEC_OUTPUT_STABILIZATION_STATUS:
+                data = &this->outputs_s.stabilization_status;
+                break;
+            case BSEC_OUTPUT_RUN_IN_STATUS:
+                data = &this->outputs_s.run_in_status;
+                break;
+            case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE:
+                data = &this->outputs_s.compensated_temp;
+                break;
+            case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY:
+                data = &this->outputs_s.compensated_humidity;
+                break;
+            case BSEC_OUTPUT_GAS_PERCENTAGE:
+                data = &this->outputs_s.gas_percentage;
+                break;
+            case BSEC_OUTPUT_GAS_ESTIMATE_1:
+                data = &this->outputs_s.gas_estimate_1;
+                break;
+            case BSEC_OUTPUT_GAS_ESTIMATE_2:
+                data = &this->outputs_s.gas_estimate_2;
+                break;
+            case BSEC_OUTPUT_GAS_ESTIMATE_3:
+                data = &this->outputs_s.gas_estimate_3;
+                break;
+            case BSEC_OUTPUT_GAS_ESTIMATE_4:
+                data = &this->outputs_s.gas_estimate_4;
+                break;
+            case BSEC_OUTPUT_RAW_GAS_INDEX:
+                data = &this->outputs_s.raw_gas_index;
+                break;
+            default:
+                data = NULL;
+                break;
+        }
+        if (data != NULL) {
+            // Copy over the data to the correct element of the structure.
+            data->valid = true;
+            data->accuracy = output.accuracy;
+            data->signal = output.signal;
+            data->signal_dimensions = output.signal_dimensions;
+            data->time_stamp = output.time_stamp;
+        } else {
+            ESP_LOGE(LOG_TAG, "Unknown virtual sensor type of %d. Skipping",
+                     output.sensor_id);
+        }
+    }
 }
