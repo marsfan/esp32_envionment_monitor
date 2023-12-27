@@ -9,13 +9,14 @@
 #include <string.h>
 
 #include "bsec/inc/bsec_interface.h"
+#include "common.h"
 
 #define LOG_TAG "BSEC"
 
 #define CHECK_INPUT_REQUEST(x, shift) (x & (1 << (shift - 1)))
 
 #define NUM_NON_SCAN_SENSORS 13
-#define MAX_MUTEX_WAIT_TICKS 10
+
 
 // See bsec.h for documentation
 BSEC::BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time,

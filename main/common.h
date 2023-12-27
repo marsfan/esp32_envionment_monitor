@@ -11,6 +11,9 @@
 #include <esp_err.h>
 #include <esp_log.h>
 
+// Max number of ticks to wait to get a mutex
+#define MAX_MUTEX_WAIT_TICKS 10
+
 #define LOGE_ON_ERROR(tag, func, msg, err)                                \
     if (err != ESP_OK) {                                                  \
         ESP_LOGE(tag, "Error | %s | %s | %s", func, esp_err_to_name(err), \
