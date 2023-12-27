@@ -16,11 +16,19 @@
 // Max number of found wifi networks. Needs to be small(ish) to save stack.
 #define MAX_FOUND_NETWORKS 10
 
-static void wifi_event_handler(void* arg, int32_t event_id, void* event_data);
-static void ip_event_handler(void* arg, int32_t event_id, void* event_data);
+/// @brief Max number of times to retry connecting
+#define MAX_CONNECTION_RETRY 5
+
+/* The event group allows multiple bits for each event, but we only care about
+ * two events:
+ * - we are connected to the AP with an IP
+ * - we failed to connect after the maximum amount of retries */
+#define WIFI_CONNECTED_BIT 0b01
+#define WIFI_FAIL_BIT 0b10
+
+// static void ip_event_handler(void* arg, int32_t event_id, void* event_data);
 static void event_handler(void* arg, esp_event_base_t event_base,
                           int32_t event_id, void* event_data);
-
 // See wifi_network.h for documentation.
 WiFiNetwork::WiFiNetwork(void) {
     this->init_config = WIFI_INIT_CONFIG_DEFAULT();
@@ -36,6 +44,9 @@ WiFiNetwork::WiFiNetwork(void) {
 // See wifi_network.h for documentation.
 esp_err_t WiFiNetwork::init(void) {
     esp_err_t result = ESP_OK;
+
+    // Create WiFi event group
+    this->wifi_event_group = xEventGroupCreate();
 
     // Init network interface
     result = esp_netif_init();
@@ -70,7 +81,7 @@ esp_err_t WiFiNetwork::init(void) {
     // Set event callback for WiFi events
     if (result == ESP_OK) {
         result = esp_event_handler_instance_register(
-            WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL,
+            WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, this,
             &this->wifi_event_instance_any_id);
         LOGE_ON_ERROR(WIFI_LOG_TAG, __func__,
                       "Failed registering WiFi event handler", result);
@@ -79,7 +90,7 @@ esp_err_t WiFiNetwork::init(void) {
     // Set event callback for IP Events
     if (result == ESP_OK) {
         result = esp_event_handler_instance_register(
-            IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL,
+            IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, this,
             &this->ip_sta_got_ip_event_instance);
         LOGE_ON_ERROR(WIFI_LOG_TAG, __func__,
                       "Failed Registering IP Event handler", result);
@@ -155,12 +166,22 @@ esp_err_t WiFiNetwork::connect_to_ap(const char* const ssid,
     result = esp_wifi_set_config(WIFI_IF_STA, &this->wifi_config);
     LOGE_ON_ERROR(WIFI_LOG_TAG, __func__, "Failed Setting WiFi COnfig", result);
 
+    // Actually try to connect.
     if (result == ESP_OK) {
         result = esp_wifi_connect();
         LOGE_ON_ERROR(WIFI_LOG_TAG, __func__, "Failed Connecting to Network",
                       result);
     }
 
+    // Wait for connect to pass/fail
+    if (result == ESP_OK) {
+        EventBits_t bits = xEventGroupWaitBits(
+            this->wifi_event_group, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, pdFALSE,
+            pdFALSE, portMAX_DELAY);
+        if ((bits & WIFI_FAIL_BIT) != 0) {
+            result = ESP_ERR_TIMEOUT;
+        }
+    }
     return result;
 }
 
@@ -169,11 +190,8 @@ esp_err_t WiFiNetwork::disconnect(void) {
     return esp_wifi_disconnect();
 }
 
-/// @brief Handle WiFi Events
-/// @param arg Event argument
-/// @param event_id The event ID
-/// @param event_data Event data
-static void wifi_event_handler(void* arg, int32_t event_id, void* event_data) {
+void WiFiNetwork::wifi_event_handler(void* arg, int32_t event_id,
+                                     void* event_data) {
     switch (event_id) {
         case WIFI_EVENT_SCAN_DONE:
             ESP_LOGI(WIFI_LOG_TAG, "Finished Scanning for Networks");
@@ -186,19 +204,25 @@ static void wifi_event_handler(void* arg, int32_t event_id, void* event_data) {
         case WIFI_EVENT_STA_CONNECTED:
             ESP_LOGI(WIFI_LOG_TAG, "WiFi Station Connected.");
             break;
+        case WIFI_EVENT_STA_DISCONNECTED:
+            ESP_LOGI(WIFI_LOG_TAG, "WiFi Station Disconnected");
+            if (this->connection_retry_count > MAX_CONNECTION_RETRY) {
+                esp_wifi_connect();
+                ESP_LOGI(WIFI_LOG_TAG, "Retrying Connection. #%d",
+                         this->connection_retry_count);
+                this->connection_retry_count++;
+            } else {
+                xEventGroupSetBits(this->wifi_event_group, WIFI_FAIL_BIT);
+            }
+            break;
         default:
             ESP_LOGE(WIFI_LOG_TAG, "Unknown WiFi Event: %lu", event_id);
             break;
     }
 }
 
-// TODO: make these part of the class
-
-/// @brief Handle IP Events
-/// @param arg Event argument
-/// @param event_id The event ID
-/// @param event_data Event data
-static void ip_event_handler(void* arg, int32_t event_id, void* event_data) {
+void WiFiNetwork::ip_event_handler(void* arg, int32_t event_id,
+                                   void* event_data) {
     switch (event_id) {
         // TODO: Add case for disconnect. Needs to be part of class so we can
         // have the counter
@@ -218,6 +242,7 @@ static void ip_event_handler(void* arg, int32_t event_id, void* event_data) {
                     IP2STR(&event->ip_info.ip), IP2STR(&event->ip_info.gw),
                     IP2STR(&event->ip_info.netmask));
             }
+            xEventGroupSetBits(this->wifi_event_group, WIFI_CONNECTED_BIT);
             break;
         }
         default:
@@ -227,16 +252,18 @@ static void ip_event_handler(void* arg, int32_t event_id, void* event_data) {
 }
 
 /// @brief Handle system events
-/// @param arg Arguments for the given event
+/// @param arg Argument for the given event. Should be a pointer to the
+/// WiFiNetwork instance
 /// @param event_base Base event type
 /// @param event_id ID of the event
 /// @param event_data Data for the event
 static void event_handler(void* arg, esp_event_base_t event_base,
                           int32_t event_id, void* event_data) {
+    WiFiNetwork* wifi = (WiFiNetwork*)arg;
     if (event_base == WIFI_EVENT) {
-        wifi_event_handler(arg, event_id, event_data);
+        wifi->wifi_event_handler(arg, event_id, event_data);
     } else if (event_base == IP_EVENT) {
-        ip_event_handler(arg, event_id, event_data);
+        wifi->ip_event_handler(arg, event_id, event_data);
     } else {
         ESP_LOGE("event_handler", "Unhandled event. base: %s, ID: %ld",
                  event_base, event_id);

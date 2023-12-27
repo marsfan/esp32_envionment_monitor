@@ -11,6 +11,7 @@
 #include <esp_event.h>
 #include <esp_netif.h>
 #include <esp_wifi.h>
+#include <freertos/event_groups.h>
 
 #include "wifi_config.h"
 
@@ -53,6 +54,18 @@ class WiFiNetwork {
     /// @return Result of disconnecting from the AP
     esp_err_t disconnect(void);
 
+    /// @brief Handle WiFi Events
+    /// @param arg Event argument
+    /// @param event_id The event ID
+    /// @param event_data Event data
+    void wifi_event_handler(void *arg, int32_t event_id, void *event_data);
+
+    /// @brief Handle IP Events
+    /// @param arg Event argument
+    /// @param event_id The event ID
+    /// @param event_data Event data
+    void ip_event_handler(void *arg, int32_t event_id, void *event_data);
+
    private:
     /// @brief Initialization config for the WiFi system
     wifi_init_config_t init_config;
@@ -69,8 +82,11 @@ class WiFiNetwork {
     /// @brief Current number of retries for connecting to a network.
     uint8_t connection_retry_count;
 
-    // Pointer to the network interface structure.
+    /// @brief Pointer to the network interface structure.
     esp_netif_t *netif;
+
+    /// @brief Event group for signaling when WiFi is connected.
+    EventGroupHandle_t wifi_event_group;
 };
 
 #endif  // NETWORK_H
