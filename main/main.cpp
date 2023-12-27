@@ -114,17 +114,13 @@ static void i2c_sensor_task(void* taskParams) {
         ESP_LOGI(I2C_TASK_NAME, "High Water Mark: %d",
                  uxTaskGetStackHighWaterMark(NULL));
         // FIXME: Use xTaskDelayUntil instead?
+
         vTaskDelay(remaining_time / 1000 / portTICK_PERIOD_MS);
     }
 }
 
 /// @brief Main task function.
 extern "C" void app_main(void) {
-    // static uint8_t ucParameterToPass;
-    // TaskHandle_t i2c_task_handle;
-    // xTaskCreate(i2c_sensor_task, "I2C_SENSOR_TASK", 1024, &ucParameterToPass,
-    //             tskIDLE_PRIORITY, &i2c_task_handle);
-
     // Initialize the WiFi Connection.
     ESP_ERROR_CHECK(wifi.init());
     // Scan for and print found networks
@@ -138,4 +134,10 @@ extern "C" void app_main(void) {
 
     ESP_LOGI("app_main", "High Water Mark: %d",
              uxTaskGetStackHighWaterMark(NULL));
+
+    // Start up the sensor reading.
+    static uint8_t ucParameterToPass;
+    TaskHandle_t i2c_task_handle;
+    xTaskCreate(i2c_sensor_task, "I2C_SENSOR_TASK", 4096, &ucParameterToPass,
+                tskIDLE_PRIORITY, &i2c_task_handle);
 }
