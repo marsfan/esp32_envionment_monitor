@@ -128,14 +128,8 @@ class BSEC : private Bme688 {
     /// @return Result of reading and processing the data.
     bsec_result_t periodic_process(int64_t timestamp_ns);
 
-    /// @brief Get the most recent set of output data
-    /// @param outputs The most recent set of output data. Must be an array of
-    /// length BSEC_NUMBER_OUTPUTS
-    /// @param num_outputs The total number of the most recent outputs
-    void get_output(bsec_output_t *outputs, uint8_t *num_outputs);
-
-    // TODO: Update docs when this is thread safe
     /// @brief Get the most recent set of output data from the class
+    /// @details This function uses a mutex so it should be thread safe
     /// @param output_data Pointer to hold the output data.
     void get_output_data(bsec_structured_outputs_t *output_data);
 
@@ -180,19 +174,17 @@ class BSEC : private Bme688 {
 
     // TODO: Update docs once it is thread safe
     /// @brief Update the outputs structure with newly read sensor data
+    /// @details This uses a mutex, so it should be thread safe.
     /// @param outputs The array of output data from the BSEC library
     /// @param num_outputs The number of entries in the output array
     void update_output_structure(bsec_output_t *outputs,
                                  const uint8_t num_outputs);
 
     /// @brief Output data from BSEC
-    bsec_output_t outputs[BSEC_NUMBER_OUTPUTS];
+    bsec_structured_outputs_t outputs;
 
-    /// @brief number of outputs from last run.
-    uint8_t num_outputs;
-
-    /// @brief Output data from BSEC
-    bsec_structured_outputs_t outputs_s;
+    /// @brief Mutex for ensuring thread safety on the output data
+    SemaphoreHandle_t output_mutex;
 
     /// @brief  Offset to to apply to the temperature measurement, to
     /// correct for sensor or enclosure bias.

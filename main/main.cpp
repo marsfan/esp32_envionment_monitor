@@ -93,16 +93,6 @@ static void i2c_sensor_task(void* taskParams) {
             I2C_TASK_NAME, "Periodic Process. Result=%lld",
             bsec.periodic_process(esp_timer_get_time() * 1000).integer_result);
 
-        // Read the data from the last periodic processing run.
-        uint8_t num_output = 0;
-        bsec_output_t outputs[BSEC_NUMBER_OUTPUTS];
-        bsec.get_output(outputs, &num_output);
-        for (int i = 0; i < num_output; i++) {
-            ESP_LOGI(I2C_TASK_NAME, "Output num=%d, type=%d, acc=%d, value=%f",
-                     i, outputs[i].sensor_id, outputs[i].accuracy,
-                     outputs[i].signal);
-        }
-
         // Read and log the ambient light level
         ESP_LOGI(I2C_TASK_NAME, "ALS: %d, White: %d, lux: %f",
                  veml.get_ambient_level(), veml.get_white_level(),
@@ -140,4 +130,13 @@ extern "C" void app_main(void) {
     TaskHandle_t i2c_task_handle;
     xTaskCreate(i2c_sensor_task, "I2C_SENSOR_TASK", 4096, &ucParameterToPass,
                 tskIDLE_PRIORITY, &i2c_task_handle);
+
+    while (true) {
+        bsec_structured_outputs_t data;
+        bsec.get_output_data(&data);
+        ESP_LOGI("app_main", "Temp: %f, Acc: %d, valid: %d",
+                 data.compensated_temp.signal, data.compensated_temp.accuracy,
+                 data.compensated_temp.valid);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
 }
