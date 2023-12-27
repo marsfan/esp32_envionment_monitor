@@ -17,14 +17,20 @@
                  msg);                                                    \
     }
 
-/*!
- * @brief Print to log, but only on an error.
- * @param[in] err: The error value. Loggin only occurs if this is not ESP_OK
- * @param[in] tag Error tag to show in log message
- * @param[in] func The function the error ocurred in.
- * @param[in] msg Error message to display
- */
-void log_e_on_error(esp_err_t err, const char *const tag,
-                    const char *const func, const char *const msg);
+/// @brief Get the epoch time in seconds
+/// @return The epoch time in seconds
+int64_t get_epoch_time_s(void);
+
+/// @brief Get the epoch time in MS
+/// @return The epoch time in ms
+int64_t get_epoch_time_ms(void);
+
+/// @brief Get the epoch time in us
+/// @return The epoch time in us
+int64_t get_epoch_time_us(void);
+
+/// @brief Get the epoch time in ns
+/// @return The epoch time in ns
+int64_t get_epoch_time_ns(void);
 
 #endif  // COMMON_H

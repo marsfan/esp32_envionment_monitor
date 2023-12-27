@@ -42,8 +42,9 @@ esp_err_t Veml7700::set_configuration(const veml_config_reg_t *const config) {
 
     esp_err_t err =
         this->write_to_reg(VEML_CONFIG_REG, &this->configuration.regs_16bit);
-    log_e_on_error(err, VEML_TAG, __func__,
-                   "Failed setting VEML7700 Configuration register");
+    LOGE_ON_ERROR(VEML_TAG, __func__,
+                  "Failed setting VEML7700 Configuring Register", err);
+
     return err;
 }
 
@@ -51,8 +52,8 @@ esp_err_t Veml7700::set_configuration(const veml_config_reg_t *const config) {
 esp_err_t Veml7700::get_configuration(void) {
     esp_err_t err =
         this->read_from_reg(VEML_CONFIG_REG, &this->configuration.regs_16bit);
-    log_e_on_error(err, VEML_TAG, __func__,
-                   "Failed reading VEML7700 Configuration Register");
+    LOGE_ON_ERROR(VEML_TAG, __func__,
+                  "Failed reading VEML7700 Configuring Register", err);
     return err;
 }
 
@@ -69,7 +70,7 @@ esp_err_t Veml7700::get_configuration(veml_config_reg_t *config) {
 uint16_t Veml7700::get_ambient_level(void) {
     uint16_t data;
     esp_err_t err = this->read_from_reg(VEML_ALS_LEVEL_REG, &data);
-    log_e_on_error(err, VEML_TAG, __func__, "Failed reading ALS Register");
+    LOGE_ON_ERROR(VEML_TAG, __func__, "Failed Reading ALS Register", err);
     return data;
 }
 
@@ -77,8 +78,8 @@ uint16_t Veml7700::get_ambient_level(void) {
 uint16_t Veml7700::get_white_level(void) {
     uint16_t data;
     esp_err_t err = this->read_from_reg(VEML_WHITE_LEVEL_REG, &data);
-    log_e_on_error(err, VEML_TAG, __func__,
-                   "Failed reading white level Register");
+    LOGE_ON_ERROR(VEML_TAG, __func__, "Failed reading white level register",
+                  err);
     return data;
 }
 

@@ -7,11 +7,26 @@
 
 #include <esp_err.h>
 #include <esp_log.h>
+#include <sys/time.h>
 
-// See common.h for documentation
-void log_e_on_error(esp_err_t err, const char *const tag,
-                    const char *const func, const char *const msg) {
-    if (err != ESP_OK) {
-        ESP_LOGE(tag, "Error | %s | %d | %s", func, err, msg);
-    }
+// See common.h for docs
+int64_t get_epoch_time_s(void) {
+    return get_epoch_time_us() / 1000000;
+}
+
+// See common.h for docs
+int64_t get_epoch_time_ms(void) {
+    return get_epoch_time_us() / 1000;
+}
+
+// See common.h for docs
+int64_t get_epoch_time_us(void) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (tv.tv_sec * 1000000) + (tv.tv_usec);
+}
+
+// See common.h for docs
+int64_t get_epoch_time_ns(void) {
+    return get_epoch_time_us() * 1000;
 }
