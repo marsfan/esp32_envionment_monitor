@@ -7,6 +7,7 @@
 #include "wifi_network.h"
 
 #include <esp_log.h>
+#include <esp_netif_sntp.h>
 #include <string.h>
 
 #include "common.h"
@@ -25,6 +26,12 @@
  * - we failed to connect after the maximum amount of retries */
 #define WIFI_CONNECTED_BIT 0b01
 #define WIFI_FAIL_BIT 0b10
+
+/// @brief NTP Server to use to get time
+#define NTP_SERVER "pool.ntp.org"
+
+/// @brief Whether or not to smoothly adjust system time
+#define USE_SMOOTH_SYNC true
 
 // static void ip_event_handler(void* arg, int32_t event_id, void* event_data);
 static void event_handler(void* arg, esp_event_base_t event_base,
@@ -100,6 +107,14 @@ esp_err_t WiFiNetwork::init(void) {
     if (result == ESP_OK) {
         result = esp_wifi_start();
         LOGE_ON_ERROR(WIFI_LOG_TAG, __func__, "Failed Staring WiFi", result);
+    }
+
+    // Initialize NTP system
+    if (result == ESP_OK) {
+        esp_sntp_config sntp_config = ESP_NETIF_SNTP_DEFAULT_CONFIG(NTP_SERVER);
+        sntp_config.smooth_sync = USE_SMOOTH_SYNC;
+        result = esp_netif_sntp_init(&sntp_config);
+        LOGE_ON_ERROR(WIFI_LOG_TAG, __func__, "Failed setting up SNTP", result);
     }
 
     return result;
@@ -190,6 +205,17 @@ esp_err_t WiFiNetwork::disconnect(void) {
     return esp_wifi_disconnect();
 }
 
+// See wifi_network.h for docs
+esp_err_t WiFiNetwork::update_time_from_network(void) {
+    return this->update_time_from_network(10000);
+}
+
+// See wifi_network.h for docs
+esp_err_t WiFiNetwork::update_time_from_network(uint32_t wait_time) {
+    return esp_netif_sntp_sync_wait(pdMS_TO_TICKS(wait_time))
+}
+
+// See wifi_network.h for docs
 void WiFiNetwork::wifi_event_handler(void* arg, int32_t event_id,
                                      void* event_data) {
     switch (event_id) {
@@ -221,11 +247,12 @@ void WiFiNetwork::wifi_event_handler(void* arg, int32_t event_id,
     }
 }
 
+// See wifi_network.h for docs
 void WiFiNetwork::ip_event_handler(void* arg, int32_t event_id,
                                    void* event_data) {
     switch (event_id) {
-        // TODO: Add case for disconnect. Needs to be part of class so we can
-        // have the counter
+        // TODO: Add case for disconnect. Needs to be part of class so we
+        // can have the counter
         case IP_EVENT_STA_GOT_IP: {
             ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
             if (event->ip_changed) {
@@ -235,12 +262,12 @@ void WiFiNetwork::ip_event_handler(void* arg, int32_t event_id,
                          IP2STR(&event->ip_info.ip), IP2STR(&event->ip_info.gw),
                          IP2STR(&event->ip_info.netmask));
             } else {
-                ESP_LOGI(
-                    WIFI_LOG_TAG,
-                    "IPv4 DHCP Configuration complete. Address=%d.%d.%d.%d, "
-                    "Gateway=%d.%d.%d.%d, Netmask=%d.%d.%d.%d",
-                    IP2STR(&event->ip_info.ip), IP2STR(&event->ip_info.gw),
-                    IP2STR(&event->ip_info.netmask));
+                ESP_LOGI(WIFI_LOG_TAG,
+                         "IPv4 DHCP Configuration complete. "
+                         "Address=%d.%d.%d.%d, "
+                         "Gateway=%d.%d.%d.%d, Netmask=%d.%d.%d.%d",
+                         IP2STR(&event->ip_info.ip), IP2STR(&event->ip_info.gw),
+                         IP2STR(&event->ip_info.netmask));
             }
             xEventGroupSetBits(this->wifi_event_group, WIFI_CONNECTED_BIT);
             break;

@@ -54,6 +54,17 @@ class WiFiNetwork {
     /// @return Result of disconnecting from the AP
     esp_err_t disconnect(void);
 
+    /// @brief Update the current time from the network
+    /// @details Will wait up to 10 seconds for a response.
+    /// @return Result of updating the time from the network
+    esp_err_t update_time_from_network(void);
+
+    /// @brief Update the current time from the network
+    /// @param wait_time The maximum amount of time (in ms) to wait for the time
+    /// to be updated
+    /// @return Result of updating the time from the network
+    esp_err_t update_time_from_network(uint32_t wait_time);
+
     /// @brief Handle WiFi Events
     /// @param arg Event argument
     /// @param event_id The event ID
