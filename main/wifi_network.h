@@ -42,7 +42,7 @@ class WiFiNetwork {
     /// @return Result of the network scan
     esp_err_t scan_for_networks(void);
 
-    /// @brief Connect to the given access point
+    /// @brief Connect to the given access point and query NTP server.
     /// @param ssid SSID of the access point. Max 32 characters (inc null
     /// terminator)
     /// @param password Password of the access point. Max 64 characters (inc
@@ -50,7 +50,7 @@ class WiFiNetwork {
     /// @return Result of connecting to the AP.
     esp_err_t connect_to_ap(const char *const ssid, const char *const password);
 
-    /// @brief Disconnect from the currently connected AP
+    /// @brief Disconnect from the currently connected AP and deactivate NTP
     /// @return Result of disconnecting from the AP
     esp_err_t disconnect(void);
 

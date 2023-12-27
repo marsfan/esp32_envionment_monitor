@@ -109,14 +109,6 @@ esp_err_t WiFiNetwork::init(void) {
         LOGE_ON_ERROR(WIFI_LOG_TAG, __func__, "Failed Staring WiFi", result);
     }
 
-    // Initialize NTP system
-    if (result == ESP_OK) {
-        esp_sntp_config sntp_config = ESP_NETIF_SNTP_DEFAULT_CONFIG(NTP_SERVER);
-        sntp_config.smooth_sync = USE_SMOOTH_SYNC;
-        result = esp_netif_sntp_init(&sntp_config);
-        LOGE_ON_ERROR(WIFI_LOG_TAG, __func__, "Failed setting up SNTP", result);
-    }
-
     return result;
 }
 
@@ -197,11 +189,23 @@ esp_err_t WiFiNetwork::connect_to_ap(const char* const ssid,
             result = ESP_ERR_TIMEOUT;
         }
     }
+
+    // Initialize NTP system
+    if (result == ESP_OK) {
+        esp_sntp_config sntp_config = ESP_NETIF_SNTP_DEFAULT_CONFIG(NTP_SERVER);
+        sntp_config.smooth_sync = USE_SMOOTH_SYNC;
+        result = esp_netif_sntp_init(&sntp_config);
+
+        LOGE_ON_ERROR(WIFI_LOG_TAG, __func__, "Failed setting up SNTP", result);
+    } else {
+        ESP_LOGI(WIFI_LOG_TAG, "Started NTP system");
+    }
     return result;
 }
 
 // See wifi_network.h for docs
 esp_err_t WiFiNetwork::disconnect(void) {
+    esp_netif_sntp_deinit();
     return esp_wifi_disconnect();
 }
 
@@ -212,7 +216,7 @@ esp_err_t WiFiNetwork::update_time_from_network(void) {
 
 // See wifi_network.h for docs
 esp_err_t WiFiNetwork::update_time_from_network(uint32_t wait_time) {
-    return esp_netif_sntp_sync_wait(pdMS_TO_TICKS(wait_time))
+    return esp_netif_sntp_sync_wait(pdMS_TO_TICKS(wait_time));
 }
 
 // See wifi_network.h for docs

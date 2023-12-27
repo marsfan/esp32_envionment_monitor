@@ -9,6 +9,8 @@
 #include <string.h>
 
 // Used for sensor interfacing.
+#include <sys/time.h>
+
 #include "bsec.h"
 #include "driver/i2c.h"
 #include "esp_timer.h"
@@ -17,6 +19,9 @@
 // Used for WiFi stuff
 #include "wifi_config.h"
 #include "wifi_network.h"
+
+// Network Time
+#include "common.h"
 
 // Tags for logging
 #define I2C_TASK_NAME "i2c_sensor_task"  /// Name for logging
@@ -124,6 +129,13 @@ extern "C" void app_main(void) {
     ESP_ERROR_CHECK(wifi.init());
     // Scan for and print found networks
     ESP_ERROR_CHECK(wifi.scan_for_networks());
+
     // Connect to specific wifi network
     ESP_ERROR_CHECK(wifi.connect_to_ap(WIFI_SSID, WIFI_PASSWORD));
+
+    // Update system time
+    ESP_ERROR_CHECK(wifi.update_time_from_network(20000));
+
+    ESP_LOGI("app_main", "High Water Mark: %d",
+             uxTaskGetStackHighWaterMark(NULL));
 }
