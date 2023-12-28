@@ -136,11 +136,42 @@ extern "C" void app_main(void) {
         ESP_ERROR_CHECK(veml.get_outputs(&veml_data));
 
         ESP_LOGI("app_main", "Temp: %f, Acc: %d, valid: %d",
-                 data.compensated_temp.signal, data.compensated_temp.accuracy,
-                 data.compensated_temp.valid);
+                 C_TO_F(data.compensated_temp.signal),
+                 data.compensated_temp.accuracy, data.compensated_temp.valid);
+        ESP_LOGI("app_main", "Humidity: %f, Acc: %d, valid: %d",
+                 C_TO_F(data.compensated_humidity.signal),
+                 data.compensated_humidity.accuracy,
+                 data.compensated_humidity.valid);
+        ESP_LOGI("app_main", "Pressure: %f, Acc: %d, valid: %d",
+                 C_TO_F(data.raw_pressure.signal), data.raw_pressure.accuracy,
+                 data.raw_pressure.valid);
+        ESP_LOGI("app_main", "Raw Gas: %f, Acc: %d, valid: %d",
+                 C_TO_F(data.raw_gas.signal), data.raw_gas.accuracy,
+                 data.raw_gas.valid);
+        ESP_LOGI("app_main", "IAQ: %f, Acc: %d, valid: %d", data.iaq.signal,
+                 data.iaq.accuracy, data.iaq.valid);
+        ESP_LOGI("app_main", "Static IAQ: %f, Acc: %d, valid: %d",
+                 data.static_iaq.signal, data.static_iaq.accuracy,
+                 data.static_iaq.valid);
+        ESP_LOGI("app_main", "eCO2 IAQ: %f, Acc: %d, valid: %d",
+                 data.co2_eq.signal, data.co2_eq.accuracy, data.co2_eq.valid);
+        ESP_LOGI("app_main", "Breath VOC: %f, Acc: %d, valid: %d",
+                 data.breath_voc_eq.signal, data.breath_voc_eq.accuracy,
+                 data.breath_voc_eq.valid);
+        ESP_LOGI("app_main", "Gas Percent: %f, Acc: %d, valid: %d",
+                 data.gas_percentage.signal, data.gas_percentage.accuracy,
+                 data.gas_percentage.valid);
+        ESP_LOGI("app_main", "Run In Status: %f, Acc: %d, valid: %d",
+                 data.run_in_status.signal, data.run_in_status.accuracy,
+                 data.run_in_status.valid);
+        ESP_LOGI("app_main", "Stabilization: %f, Acc: %d, valid: %d",
+                 data.stabilization_status.signal,
+                 data.stabilization_status.accuracy,
+                 data.stabilization_status.valid);
+
         ESP_LOGI("app_main", "ALS: %d, White: %d, LUX: %f", veml_data.raw_als,
                  veml_data.raw_white, veml_data.lux);
 
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
 }
