@@ -17,7 +17,6 @@
 
 #define NUM_NON_SCAN_SENSORS 13
 
-
 // See bsec.h for documentation
 BSEC::BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time,
            float temp_offset)
@@ -315,86 +314,92 @@ uint8_t BSEC::add_sig_cond(const uint8_t input_signal, const float value,
 // See bsec.h for documentation
 void BSEC::update_output_structure(bsec_output_t *outputs,
                                    const uint8_t num_outputs) {
-    // Take mutex so we can process data.
-    if (xSemaphoreTake(this->output_mutex, MAX_MUTEX_WAIT_TICKS) == pdTRUE) {
-        (void)memset(&this->outputs, 0, sizeof(bsec_structured_outputs_t));
-        for (int i = 0; i < num_outputs; i++) {
-            bsec_output_t output = outputs[i];
-            bsec_virtual_sensor_data_t *data = NULL;
+    bsec_structured_outputs_t local_struct;
 
-            // Get pointer to correct part of struct.
-            switch (output.sensor_id) {
-                case BSEC_OUTPUT_IAQ:
-                    data = &this->outputs.iaq;
-                    break;
-                case BSEC_OUTPUT_STATIC_IAQ:
-                    data = &this->outputs.static_iaq;
-                    break;
-                case BSEC_OUTPUT_CO2_EQUIVALENT:
-                    data = &this->outputs.co2_eq;
-                    break;
-                case BSEC_OUTPUT_BREATH_VOC_EQUIVALENT:
-                    data = &this->outputs.breath_voc_eq;
-                    break;
-                case BSEC_OUTPUT_RAW_TEMPERATURE:
-                    data = &this->outputs.raw_temp;
-                    break;
-                case BSEC_OUTPUT_RAW_PRESSURE:
-                    data = &this->outputs.raw_pressure;
-                    break;
-                case BSEC_OUTPUT_RAW_HUMIDITY:
-                    data = &this->outputs.raw_pressure;
-                    break;
-                case BSEC_OUTPUT_RAW_GAS:
-                    data = &this->outputs.raw_gas;
-                    break;
-                case BSEC_OUTPUT_STABILIZATION_STATUS:
-                    data = &this->outputs.stabilization_status;
-                    break;
-                case BSEC_OUTPUT_RUN_IN_STATUS:
-                    data = &this->outputs.run_in_status;
-                    break;
-                case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE:
-                    data = &this->outputs.compensated_temp;
-                    break;
-                case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY:
-                    data = &this->outputs.compensated_humidity;
-                    break;
-                case BSEC_OUTPUT_GAS_PERCENTAGE:
-                    data = &this->outputs.gas_percentage;
-                    break;
-                case BSEC_OUTPUT_GAS_ESTIMATE_1:
-                    data = &this->outputs.gas_estimate_1;
-                    break;
-                case BSEC_OUTPUT_GAS_ESTIMATE_2:
-                    data = &this->outputs.gas_estimate_2;
-                    break;
-                case BSEC_OUTPUT_GAS_ESTIMATE_3:
-                    data = &this->outputs.gas_estimate_3;
-                    break;
-                case BSEC_OUTPUT_GAS_ESTIMATE_4:
-                    data = &this->outputs.gas_estimate_4;
-                    break;
-                case BSEC_OUTPUT_RAW_GAS_INDEX:
-                    data = &this->outputs.raw_gas_index;
-                    break;
-                default:
-                    data = NULL;
-                    break;
-            }
-            if (data != NULL) {
-                // Copy over the data to the correct element of the structure.
-                data->valid = true;
-                data->accuracy = output.accuracy;
-                data->signal = output.signal;
-                data->signal_dimensions = output.signal_dimensions;
-                data->time_stamp = output.time_stamp;
-            } else {
-                ESP_LOGE(LOG_TAG, "Unknown virtual sensor type of %d. Skipping",
-                         output.sensor_id);
-            }
+    // Build up a local data struct outside of the mutex.
+    (void)memset(&local_struct, 0, sizeof(bsec_structured_outputs_t));
+    for (int i = 0; i < num_outputs; i++) {
+        bsec_output_t output = outputs[i];
+        bsec_virtual_sensor_data_t *data = NULL;
+
+        // Get pointer to correct part of struct.
+        switch (output.sensor_id) {
+            case BSEC_OUTPUT_IAQ:
+                data = &local_struct.iaq;
+                break;
+            case BSEC_OUTPUT_STATIC_IAQ:
+                data = &local_struct.static_iaq;
+                break;
+            case BSEC_OUTPUT_CO2_EQUIVALENT:
+                data = &local_struct.co2_eq;
+                break;
+            case BSEC_OUTPUT_BREATH_VOC_EQUIVALENT:
+                data = &local_struct.breath_voc_eq;
+                break;
+            case BSEC_OUTPUT_RAW_TEMPERATURE:
+                data = &local_struct.raw_temp;
+                break;
+            case BSEC_OUTPUT_RAW_PRESSURE:
+                data = &local_struct.raw_pressure;
+                break;
+            case BSEC_OUTPUT_RAW_HUMIDITY:
+                data = &local_struct.raw_pressure;
+                break;
+            case BSEC_OUTPUT_RAW_GAS:
+                data = &local_struct.raw_gas;
+                break;
+            case BSEC_OUTPUT_STABILIZATION_STATUS:
+                data = &local_struct.stabilization_status;
+                break;
+            case BSEC_OUTPUT_RUN_IN_STATUS:
+                data = &local_struct.run_in_status;
+                break;
+            case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE:
+                data = &local_struct.compensated_temp;
+                break;
+            case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY:
+                data = &local_struct.compensated_humidity;
+                break;
+            case BSEC_OUTPUT_GAS_PERCENTAGE:
+                data = &local_struct.gas_percentage;
+                break;
+            case BSEC_OUTPUT_GAS_ESTIMATE_1:
+                data = &local_struct.gas_estimate_1;
+                break;
+            case BSEC_OUTPUT_GAS_ESTIMATE_2:
+                data = &local_struct.gas_estimate_2;
+                break;
+            case BSEC_OUTPUT_GAS_ESTIMATE_3:
+                data = &local_struct.gas_estimate_3;
+                break;
+            case BSEC_OUTPUT_GAS_ESTIMATE_4:
+                data = &local_struct.gas_estimate_4;
+                break;
+            case BSEC_OUTPUT_RAW_GAS_INDEX:
+                data = &local_struct.raw_gas_index;
+                break;
+            default:
+                data = NULL;
+                break;
         }
+        if (data != NULL) {
+            // Copy over the data to the correct element of the structure.
+            data->valid = true;
+            data->accuracy = output.accuracy;
+            data->signal = output.signal;
+            data->signal_dimensions = output.signal_dimensions;
+            data->time_stamp = output.time_stamp;
+        } else {
+            ESP_LOGE(LOG_TAG, "Unknown virtual sensor type of %d. Skipping",
+                     output.sensor_id);
+        }
+    }
 
+    // Take a mutex and copy the local data into mutex protected attribute
+    // This way we do as little as possible inside the mutex
+    if (xSemaphoreTake(this->output_mutex, MAX_MUTEX_WAIT_TICKS) == pdTRUE) {
+        (void)memcpy(&this->outputs, &local_struct,
+                     sizeof(bsec_structured_outputs_t));
         if (xSemaphoreGive(this->output_mutex) != pdTRUE) {
             ESP_LOGE(LOG_TAG,
                      "Failed to release mutex after updating output structure");
