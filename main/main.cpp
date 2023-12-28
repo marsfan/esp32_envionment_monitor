@@ -89,8 +89,8 @@ static void i2c_sensor_task(void* taskParams) {
     // Continuously read from the sensors and print the result.
     while (true) {
         // Run the BSEC periodic processing functionality.
-        ESP_LOGI(
-            I2C_TASK_NAME, "Periodic Process. Result=%lld",
+
+        ESP_ERROR_CHECK(
             bsec.periodic_process(esp_timer_get_time() * 1000).integer_result);
 
         // Read and log the ambient light level
