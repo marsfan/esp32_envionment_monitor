@@ -99,8 +99,7 @@ static void i2c_sensor_task(void* taskParams) {
         // Calculate time to sleep until next periodic processing cycle.
         int64_t remaining_time =
             bsec.get_next_call_time_us() - esp_timer_get_time();
-        ESP_LOGI(I2C_TASK_NAME, "High Water Mark: %d",
-                 uxTaskGetStackHighWaterMark(NULL));
+
         // FIXME: Use xTaskDelayUntil instead?
 
         vTaskDelay(remaining_time / 1000 / portTICK_PERIOD_MS);
@@ -168,10 +167,9 @@ extern "C" void app_main(void) {
                  data.stabilization_status.signal,
                  data.stabilization_status.accuracy,
                  data.stabilization_status.valid);
-
         ESP_LOGI("app_main", "ALS: %d, White: %d, LUX: %f", veml_data.raw_als,
                  veml_data.raw_white, veml_data.lux);
-
+        ESP_LOGI("app_main", "-----------------------------------");
         vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
 }
