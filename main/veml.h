@@ -105,6 +105,13 @@ typedef struct {
     uint16_t power_saving_enable : 1;   ///< Enable power saving
 } veml_power_saving_reg_t;
 
+/// @brief Sensor outputs structure.
+typedef struct {
+    uint16_t raw_als;    ///< Raw ALS sensor value
+    uint16_t raw_white;  ///< Raw white sensor value
+    float lux;           ///< Computed brightness in Lux
+} veml_output_t;
+
 /// @brief  VEML7700 Ambient Light Sensor interaction structure.
 class Veml7700 {
    public:
@@ -200,6 +207,23 @@ class Veml7700 {
      */
     esp_err_t set_power_state(const veml_power_options_e state);
 
+    /*!
+     * @brief Read the outputs from the sensor and update internal structure
+     * @details Will also perform any necessary processing to update the gain
+     * and integration time to a useful range.
+     * @details This function uses mutexes to be thread safe.
+     * @return Result of locking and unlocking the mutex.
+     */
+    esp_err_t periodic_process(void);
+
+    /*!
+     * @brief Get the most recently read data from the sensor
+     * @details This function uses mutexes to be thread safe.
+     * @param data Pointer to a structure to hold the data
+     * @return Result of locking and unlockign the mutex.
+     */
+    esp_err_t get_outputs(veml_output_t *data);
+
    private:
     /// @brief Sensor configuration
     veml_config_reg_t configuration;
@@ -209,6 +233,12 @@ class Veml7700 {
 
     /// @brief Time to wait for I2C operations
     TickType_t wait_time;
+
+    /// @brief Values from the most recent sensor measurement
+    veml_output_t last_output;
+
+    /// @brief Mutex to ensure that data can be accessed from multiple threads.
+    SemaphoreHandle_t output_mutex;
 
     /*!
      * @brief Write to the specific register

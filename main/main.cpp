@@ -94,9 +94,7 @@ static void i2c_sensor_task(void* taskParams) {
             bsec.periodic_process(esp_timer_get_time() * 1000).integer_result);
 
         // Read and log the ambient light level
-        ESP_LOGI(I2C_TASK_NAME, "ALS: %d, White: %d, lux: %f",
-                 veml.get_ambient_level(), veml.get_white_level(),
-                 veml.get_lux());
+        ESP_ERROR_CHECK(veml.periodic_process());
 
         // Calculate time to sleep until next periodic processing cycle.
         int64_t remaining_time =
@@ -133,10 +131,16 @@ extern "C" void app_main(void) {
 
     while (true) {
         bsec_structured_outputs_t data;
+        veml_output_t veml_data;
         bsec.get_output_data(&data);
+        ESP_ERROR_CHECK(veml.get_outputs(&veml_data));
+
         ESP_LOGI("app_main", "Temp: %f, Acc: %d, valid: %d",
                  data.compensated_temp.signal, data.compensated_temp.accuracy,
                  data.compensated_temp.valid);
+        ESP_LOGI("app_main", "ALS: %d, White: %d, LUX: %f", veml_data.raw_als,
+                 veml_data.raw_white, veml_data.lux);
+
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }

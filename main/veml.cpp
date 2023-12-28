@@ -28,6 +28,11 @@ Veml7700::Veml7700(const i2c_port_t i2c_port, const TickType_t wait_time) {
     this->i2c_port = i2c_port;
     this->wait_time = wait_time;
     (void)memset(&this->configuration, 0, sizeof(veml_config_reg_t));
+    this->output_mutex = xSemaphoreCreateMutex();
+    if (this->output_mutex == NULL) {
+        ESP_LOGE(VEML_TAG, "Failed to create mutex");
+        ESP_ERROR_CHECK(ESP_FAIL);
+    }
 }
 
 // See veml.h for documentation
@@ -123,6 +128,48 @@ veml_power_options_e Veml7700::get_power_state(void) {
 esp_err_t Veml7700::set_power_state(const veml_power_options_e state) {
     this->configuration.shutdown = state;
     return this->set_configuration();
+}
+
+// See veml.h for documentation
+esp_err_t Veml7700::periodic_process(void) {
+    // TODO: High level compensation
+    // TODO: Gain/Integration auto-adjust
+    esp_err_t result = ESP_OK;
+    uint16_t ambient_level = this->get_ambient_level();
+    uint16_t white_level = this->get_white_level();
+    float computed_lux = ambient_level * this->get_als_scale();
+
+    if (xSemaphoreTake(this->output_mutex, MAX_MUTEX_WAIT_TICKS) == pdTRUE) {
+        this->last_output.raw_als = ambient_level;
+        this->last_output.raw_white = white_level;
+        this->last_output.lux = computed_lux;
+        if (xSemaphoreGive(this->output_mutex) != pdTRUE) {
+            ESP_LOGE(VEML_TAG,
+                     "Failed to release mutex after updating output structure");
+            result = ESP_FAIL;
+        }
+    } else {
+        ESP_LOGE(VEML_TAG, "Failed to get mutex for updating output structure");
+        result = ESP_ERR_TIMEOUT;
+    }
+    return result;
+}
+
+// see veml.h for documentation
+esp_err_t Veml7700::get_outputs(veml_output_t *data) {
+    esp_err_t result = ESP_OK;
+    if (xSemaphoreTake(this->output_mutex, MAX_MUTEX_WAIT_TICKS) == pdTRUE) {
+        (void)memcpy(data, &this->last_output, sizeof(veml_output_t));
+        if (xSemaphoreGive(this->output_mutex) != pdTRUE) {
+            ESP_LOGE(VEML_TAG,
+                     "Failed to release mutex after updating data structure");
+            result = ESP_FAIL;
+        }
+    } else {
+        ESP_LOGE(VEML_TAG, "Failed to get mutex for updating data structure");
+        result = ESP_ERR_TIMEOUT;
+    }
+    return result;
 }
 
 /*======================================================================
