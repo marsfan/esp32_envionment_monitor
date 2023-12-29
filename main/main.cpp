@@ -17,6 +17,8 @@
 #include "veml.h"
 
 // Used for WiFi stuff
+#include <nvs_flash.h>
+
 #include "wifi_config.h"
 #include "wifi_network.h"
 
@@ -108,6 +110,16 @@ static void i2c_sensor_task(void* taskParams) {
 
 /// @brief Main task function.
 extern "C" void app_main(void) {
+    // Initialize NVS flash for WiFi system
+    // Initialize NVS
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES ||
+        ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+
     // Initialize the WiFi Connection.
     ESP_ERROR_CHECK(wifi.init());
     // Scan for and print found networks

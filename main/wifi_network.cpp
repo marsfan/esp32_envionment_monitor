@@ -40,9 +40,6 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 WiFiNetwork::WiFiNetwork(void) {
     this->init_config = WIFI_INIT_CONFIG_DEFAULT();
 
-    // TODO: Enable NVS Support
-    this->init_config.nvs_enable = false;
-
     (void)memset(&this->wifi_config, 0, sizeof(wifi_config_t));
 
     this->connection_retry_count = 0;
