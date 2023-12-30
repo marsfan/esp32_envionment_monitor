@@ -18,7 +18,6 @@
 // TODO: Support station mode for setting up WiFi connection?
 // TODO: Use singleton to ensure this is only instantiated once?
 // TODO: Support other config options?
-// TODO: NVS Support.
 
 class WiFiNetwork {
    public:
