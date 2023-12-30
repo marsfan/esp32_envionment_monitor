@@ -17,12 +17,17 @@ files. See the file [placeholder.md](main/bsec/placeholder.md) for instructions
 ### WiFi and MQTT Configuration
 
 Also not included is the file `private_config.h`. There is not much to
-this file, it simply defines a SSID and password for configuring the
-connection. Simply create a file with the following two preprocessor
-definitions in it.
+this file, it just defines certain options that I want to keep private.
+Simple create the file with the following preprocessor definitions
 
 * `WIFI_SSID`: String of the SSID of the network to connect to
 * `WIFI_PASSWORD`: String of the password for connecting to WiFi
+* `MQTT_BROKER_URI`: The URI to publish MQTT data to.
+* `MQTT_USERNAME`: The username to use for logging into the MQTT broker
+* `MQTT_PASSWORD`: The password to use for logging into the MQTT broker
+* `MQTT_TEMP_TOPIC`: The MQTT Topic to use for publishing the temperature.
+
+More fields will be added to this over time
 
 ## Cable Color Mapping
 

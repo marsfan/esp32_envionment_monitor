@@ -12,7 +12,9 @@
         "*.snap": "xml",
         "esp_log.h": "c",
         "i2c.h": "c",
-        "semphr.h": "c"
+        "semphr.h": "c",
+        "limits": "cpp",
+        "type_traits": "cpp"
     },
     "cSpell.words": [
         "bsec",

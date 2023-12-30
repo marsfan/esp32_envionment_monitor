@@ -25,6 +25,9 @@
 // Network Time
 #include "common.h"
 
+// MQTT stuff
+#include <mqtt_task.h>
+
 // Tags for logging
 #define I2C_TASK_NAME "i2c_sensor_task"  /// Name for logging
 
@@ -41,6 +44,7 @@
 Veml7700 veml(I2C_MASTER_PORT, I2C_TIMEOUT);
 BSEC bsec(I2C_MASTER_PORT, I2C_TIMEOUT, 0.0f);
 WiFiNetwork wifi;
+MQTTClient mqtt(MQTT_BROKER_URI, MQTT_USERNAME, MQTT_PASSWORD);
 
 /*=============================================
  *   Function Delcarations
@@ -131,6 +135,9 @@ extern "C" void app_main(void) {
     // Update system time
     ESP_ERROR_CHECK(wifi.update_time_from_network(20000));
 
+    // TODO: MQTT in separate task.
+    ESP_ERROR_CHECK(mqtt.start());
+
     ESP_LOGI("app_main", "High Water Mark: %d",
              uxTaskGetStackHighWaterMark(NULL));
 
@@ -145,6 +152,10 @@ extern "C" void app_main(void) {
         veml_output_t veml_data;
         bsec.get_output_data(&data);
         ESP_ERROR_CHECK(veml.get_outputs(&veml_data));
+
+        // TODO: MQTT in separate task
+        mqtt.publish(MQTT_TEMP_TOPIC, C_TO_F(data.compensated_temp.signal), 0,
+                     0);
 
         ESP_LOGI("app_main", "Temp: %f, Acc: %d, valid: %d",
                  C_TO_F(data.compensated_temp.signal),
