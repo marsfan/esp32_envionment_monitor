@@ -16,9 +16,13 @@
 
 /// @brief Max number of characters for a float message.
 #define MAX_FLOAT_MESSAGE_LEN 44
+/// @brief Max number of characters for BSEC JSON message
+#define MAX_BSEC_JSON_MESSAGE_LEN 85
 
 /// @brief Format string for sending float messages
 #define FLOAT_FORMAT_STR "%0.6f"
+/// @brief Format string for sending BSEC json message
+#define BSEC_JSON_FORMAT_STR "{\"value\":%0.6f,\"accuracy\":%u,\"valid\":%s}"
 
 // TODO: Support storing configuration in filesystem?
 // See mqtt_task.h for documentation
@@ -73,6 +77,16 @@ int MQTTClient::publish(const char *const topic, float data, int qos,
 }
 
 // See mqtt_task.h for documentation
+int MQTTClient::publish(const char *const topic,
+                        bsec_virtual_sensor_data_t data, int qos, int retain) {
+    char message[MAX_BSEC_JSON_MESSAGE_LEN + 1] = "";
+    (void)snprintf(message, MAX_BSEC_JSON_MESSAGE_LEN, BSEC_JSON_FORMAT_STR,
+                   data.signal, data.accuracy, data.valid ? "true" : "false");
+    return this->publish(topic, message, MAX_BSEC_JSON_MESSAGE_LEN + 1, qos,
+                         retain);
+}
+
+// See mqtt_task.h for documentation
 int MQTTClient::enqueue(const char *const topic, const char *const data,
                         int len, int qos, int retain, bool store) {
     return esp_mqtt_client_enqueue(this->client_handle, topic, data, len, qos,
@@ -84,6 +98,17 @@ int MQTTClient::enqueue(const char *const topic, float data, int qos,
                         int retain, bool store) {
     char message[MAX_FLOAT_MESSAGE_LEN + 1] = "";
     (void)snprintf(message, MAX_FLOAT_MESSAGE_LEN, FLOAT_FORMAT_STR, data);
+    return this->enqueue(topic, message, MAX_FLOAT_MESSAGE_LEN + 1, qos, retain,
+                         store);
+}
+
+// See mqtt_task.h for documentation
+int MQTTClient::enqueue(const char *const topic,
+                        bsec_virtual_sensor_data_t data, int qos, int retain,
+                        bool store) {
+    char message[MAX_BSEC_JSON_MESSAGE_LEN + 1] = "";
+    (void)snprintf(message, MAX_BSEC_JSON_MESSAGE_LEN, BSEC_JSON_FORMAT_STR,
+                   data.signal, data.accuracy, data.valid ? "true" : "false");
     return this->enqueue(topic, message, MAX_FLOAT_MESSAGE_LEN + 1, qos, retain,
                          store);
 }

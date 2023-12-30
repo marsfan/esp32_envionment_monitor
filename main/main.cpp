@@ -154,8 +154,10 @@ extern "C" void app_main(void) {
         ESP_ERROR_CHECK(veml.get_outputs(&veml_data));
 
         // TODO: MQTT in separate task
-        mqtt.publish(MQTT_TEMP_TOPIC, C_TO_F(data.compensated_temp.signal), 0,
-                     0);
+        // mqtt.publish(MQTT_TEMP_TOPIC, C_TO_F(data.compensated_temp.signal),
+        // 0,
+        //              0);
+        mqtt.publish(MQTT_TEMP_TOPIC, data.compensated_temp, 0, 0);
 
         ESP_LOGI("app_main", "Temp: %f, Acc: %d, valid: %d",
                  C_TO_F(data.compensated_temp.signal),

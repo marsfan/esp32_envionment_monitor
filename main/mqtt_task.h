@@ -11,6 +11,8 @@
 #include <esp_err.h>
 #include <mqtt_client.h>
 
+#include "bsec.h"  // bsec_virtual_sensor_data_t
+
 /// @brief A single MQTT client class for sending data to a specific broker
 class MQTTClient {
    public:
@@ -64,6 +66,24 @@ class MQTTClient {
     /// @retval -2: Full outbox
     int publish(const char *const topic, float data, int qos, int retain);
 
+    /// @brief Publish data from a BSEC virtual sensor to the broker
+    /// @details This will publish the signal with an up to 44 character string.
+    /// 6 decimal precision. For other resolution, please manually create a
+    /// string and publish the string instead.
+    /// @details The accuracy member will be  published as an integer, and the
+    /// validity member will be published as a boolean.
+    /// @details The data is published using JSON data.
+    /// @param topic The topic to publish to
+    /// @param data The data to publish
+    /// @param qos The QOS level to use when publishing
+    /// @param retain The value of the retain flag.
+    /// @return Message ID of the publish message, or an error code.
+    /// @retval >= 0: Success
+    /// @retval -1: Failure
+    /// @retval -2: Full outbox
+    int publish(const char *const topic, bsec_virtual_sensor_data_t data,
+                int qos, int retain);
+
     /// @brief Enqueue a message to be sent later.
     /// @param topic The topic to publish
     /// @param data The data to publish to the topic
@@ -95,6 +115,26 @@ class MQTTClient {
     /// @retval -2: Full outbox
     int enqueue(const char *const topic, float data, int qos, int retain,
                 bool store);
+
+    /// @brief Enqueue data from a BSEC virtual sensor to the broker
+    /// @details This will publish the signal with an up to 44 character string.
+    /// 6 decimal precision. For other resolution, please manually create a
+    /// string and publish the string instead.
+    /// @details The accuracy member will be  published as an integer, and the
+    /// validity member will be published as a boolean.
+    /// @details The data is published using JSON data.
+    /// @param topic The topic to publish to
+    /// @param data The data to publish
+    /// @param qos The QOS level to use when publishing
+    /// @param retain The value of the retain flag.
+    /// @param store If true, all messages are enqueued, otherwise only QOS 1
+    /// and QOS 2 messages are enqueued.
+    /// @return Message ID of the publish message, or an error code.
+    /// @retval >= 0: Success
+    /// @retval -1: Failure
+    /// @retval -2: Full outbox
+    int enqueue(const char *const topic, bsec_virtual_sensor_data_t data,
+                int qos, int retain, bool store);
 
    private:
     /// @brief Handle of the MQTT client.
