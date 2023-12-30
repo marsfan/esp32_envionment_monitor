@@ -13,7 +13,7 @@
 #include <esp_wifi.h>
 #include <freertos/event_groups.h>
 
-#include "wifi_config.h"
+#include "private_config.h"
 
 // TODO: Support station mode for setting up WiFi connection?
 // TODO: Use singleton to ensure this is only instantiated once?
