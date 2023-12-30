@@ -14,9 +14,9 @@ I have not included the BSEC library in the repo, as I am not sure about the
 licensing of doing that. You can get the library for free and add the missing
 files. See the file [placeholder.md](main/bsec/placeholder.md) for instructions
 
-### WiFi Configuration
+### WiFi and MQTT Configuration
 
-Also not included is the file `wifi_config.h`. There is not much to
+Also not included is the file `private_config.h`. There is not much to
 this file, it simply defines a SSID and password for configuring the
 connection. Simply create a file with the following two preprocessor
 definitions in it.

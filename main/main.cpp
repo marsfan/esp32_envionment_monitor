@@ -19,7 +19,7 @@
 // Used for WiFi stuff
 #include <nvs_flash.h>
 
-#include "wifi_config.h"
+#include "private_config.h"
 #include "wifi_network.h"
 
 // Network Time

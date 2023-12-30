@@ -3,5 +3,5 @@ sdkconfig.old
 docs/
 main/bsec/inc
 main/bsec/bin
-main/wifi_config.h
+main/private_config.h
 managed_components
