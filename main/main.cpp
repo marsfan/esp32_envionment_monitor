@@ -28,6 +28,9 @@
 // MQTT stuff
 #include <mqtt_task.h>
 
+// Sensor Hub data
+#include "sensor_hub.h"
+
 // Tags for logging
 #define I2C_TASK_NAME "i2c_sensor_task"
 #define BSEC_TASK_NAME "bsec_task"
@@ -48,6 +51,7 @@ Veml7700 veml(&i2c, I2C_TIMEOUT);
 BSEC bsec(&i2c, I2C_TIMEOUT, 0.0f);
 WiFiNetwork wifi;
 MQTTClient mqtt(MQTT_BROKER_URI, MQTT_USERNAME, MQTT_PASSWORD);
+SensorHub sensor_hub;
 
 /*=============================================
  *   Function Delcarations
