@@ -9,7 +9,7 @@
 #define BME688_H
 
 #include "bme68x_sensor_api/bme68x_defs.h"
-#include "driver/i2c.h"
+#include "safe_i2c.h"
 
 // TODO: Error code enum
 // TODO: Enum for the op mode (used in get/set)
@@ -55,11 +55,10 @@ class Bme688 {
    public:
     /*!
      * @brief Instantiate the device.
-     * @param[in] i2c_port The I2C port to use for communicating with the
-     * device.
+     * @param[in] i2c_bus Pointer to the SafeI2C bus to use for communication
      * @param[in] i2c_wait_time The max wait time after an I2C operation.
      */
-    Bme688(const i2c_port_t i2c_port, const TickType_t i2c_wait_time);
+    Bme688(SafeI2C *i2c_bus, const TickType_t i2c_wait_time);
 
     /*!
      * @brief Initialize the sensor.
@@ -228,10 +227,10 @@ class Bme688 {
     int8_t forced_measurement(bme68x_data *data, uint8_t *n_data);
 
     /*!
-     * @brief Get the i2c_port used by the device
-     * @return The i2c port used by the device.
+     * @brief Get the i2c_bus used by the device
+     * @return The i2c_bus used by the device.
      */
-    i2c_port_t get_i2c_port(void);
+    SafeI2C *get_i2c_bus(void);
 
     /*!
      * @brief Get the wait time to be used for i2c operations.
@@ -240,8 +239,8 @@ class Bme688 {
     TickType_t get_i2c_wait_time(void);
 
    private:
-    ///@brief I2C port to use
-    i2c_port_t i2c_port;
+    ///@brief SafeI2C Bus to use for transations.
+    SafeI2C *i2c_bus;
 
     /// @brief max Time to wait after a I2C transation
     TickType_t i2c_wait_time;

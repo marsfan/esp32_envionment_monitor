@@ -12,8 +12,8 @@
 #include <sys/time.h>
 
 #include "bsec.h"
-#include "driver/i2c.h"
 #include "esp_timer.h"
+#include "safe_i2c.h"
 #include "veml.h"
 
 // Used for WiFi stuff
@@ -41,8 +41,9 @@
 #define I2C_MASTER_PORT I2C_NUM_0                /// I2C Bus Number
 #define I2C_TIMEOUT (1000 / portTICK_PERIOD_MS)  /// I2C Transaction Timeout
 
-Veml7700 veml(I2C_MASTER_PORT, I2C_TIMEOUT);
-BSEC bsec(I2C_MASTER_PORT, I2C_TIMEOUT, 0.0f);
+SafeI2C i2c(I2C_MASTER_PORT);
+Veml7700 veml(&i2c, I2C_TIMEOUT);
+BSEC bsec(&i2c, I2C_TIMEOUT, 0.0f);
 WiFiNetwork wifi;
 MQTTClient mqtt(MQTT_BROKER_URI, MQTT_USERNAME, MQTT_PASSWORD);
 
@@ -50,16 +51,16 @@ MQTTClient mqtt(MQTT_BROKER_URI, MQTT_USERNAME, MQTT_PASSWORD);
  *   Function Delcarations
  *============================================*/
 
-static esp_err_t configure_i2c(void);
 static void i2c_sensor_task(void* taskParam);
 
 /*=============================================
  *   Function Definitions
  *============================================*/
 
-/// @brief Configure the I2C bus
-/// @return Error code from configuring I2C bus.
-static esp_err_t configure_i2c(void) {
+/// @brief The task for reading data from the i2c sensors.
+/// @param taskParam Parameters for the task. Currently unused
+static void i2c_sensor_task(void* taskParams) {
+    ESP_LOGI(I2C_TASK_NAME, "Starting I2C Task Up");
     i2c_config_t i2c_config = {
         .mode = I2C_MODE_MASTER,
         .sda_io_num = I2C_MASTER_SDA_IO,
@@ -70,15 +71,7 @@ static esp_err_t configure_i2c(void) {
         .clk_flags = 0,  // optional; you can use I2C_SCLK_SRC_FLAG_* flags to
                          // choose i2c source clock here
     };
-    i2c_param_config(I2C_MASTER_PORT, &i2c_config);
-    return i2c_driver_install(I2C_MASTER_PORT, i2c_config.mode, 0, 0, 0);
-}
-
-/// @brief The task for reading data from the i2c sensors.
-/// @param taskParam Parameters for the task. Currently unused
-static void i2c_sensor_task(void* taskParams) {
-    ESP_LOGI(I2C_TASK_NAME, "Starting I2C Task Up");
-    ESP_ERROR_CHECK(configure_i2c());
+    ESP_ERROR_CHECK(i2c.init(&i2c_config));
 
     // Configure BSEC library.
     ESP_LOGI(I2C_TASK_NAME, "Starting BSEC. Result=%lld",

@@ -18,9 +18,8 @@
 #define NUM_NON_SCAN_SENSORS 13
 
 // See bsec.h for documentation
-BSEC::BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time,
-           float temp_offset)
-    : Bme688(i2c_port, i2c_wait_time) {
+BSEC::BSEC(SafeI2C *i2c_bus, const TickType_t i2c_wait_time, float temp_offset)
+    : Bme688(i2c_bus, i2c_wait_time) {
     this->temp_offset = temp_offset;
     this->output_mutex = xSemaphoreCreateMutex();
     if (this->output_mutex == NULL) {

@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https: //mozilla.org/MPL/2.0/.
 #
-idf_component_register(SRCS "mqtt_task.cpp" "wifi_network.cpp" "bme688.cpp" "common.cpp" "veml.cpp" "main.cpp" "bme68x_sensor_api/bme68x.c" "bsec.cpp"
+idf_component_register(SRCS "safe_i2c.cpp" "mqtt_task.cpp" "wifi_network.cpp" "bme688.cpp" "common.cpp" "veml.cpp" "main.cpp" "bme68x_sensor_api/bme68x.c" "bsec.cpp"
                     INCLUDE_DIRS ".")
 
 # Add the BSEC library to be linked in

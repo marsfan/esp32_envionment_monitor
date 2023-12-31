@@ -48,10 +48,10 @@ const char* BME_Err_To_String(const int bme_err_code) {
 }
 
 // See bme688.h for documentation
-Bme688::Bme688(const i2c_port_t i2c_port, const TickType_t i2c_wait_time) {
+Bme688::Bme688(SafeI2C* i2c_bus, const TickType_t i2c_wait_time) {
     (void)memset(&this->device, 0, sizeof(bme68x_dev));
 
-    this->i2c_port = i2c_port;
+    this->i2c_bus = i2c_bus;
     this->i2c_wait_time = i2c_wait_time;
     this->device.intf = BME68X_I2C_INTF;
     this->device.delay_us = delay;
@@ -219,8 +219,8 @@ int8_t Bme688::forced_measurement(struct bme68x_data* data, uint8_t* n_data) {
 }
 
 // See bme688.h for documentation
-i2c_port_t Bme688::get_i2c_port(void) {
-    return this->i2c_port;
+SafeI2C* Bme688::get_i2c_bus(void) {
+    return this->i2c_bus;
 }
 
 // See bme688.h for documentation
@@ -285,9 +285,9 @@ int8_t i2c_read(uint8_t reg_addr, uint8_t* reg_data, uint32_t length,
     int8_t result = ESP_FAIL;
     if (intf_pointer) {
         Bme688* device = (Bme688*)intf_pointer;
-        result = i2c_master_write_read_device(
-            device->get_i2c_port(), BME68X_I2C_ADDR_HIGH, &reg_addr, 1,
-            reg_data, length, device->get_i2c_wait_time());
+        result = device->get_i2c_bus()->master_write_read_device(
+            BME68X_I2C_ADDR_HIGH, &reg_addr, 1, reg_data, length,
+            device->get_i2c_wait_time());
     }
 
     return result != ESP_OK;
@@ -322,9 +322,9 @@ int8_t i2c_write(uint8_t reg_addr, const uint8_t* reg_data, uint32_t length,
         data[0] = reg_addr;
 
         // Send the data
-        err = i2c_master_write_to_device(device->get_i2c_port(),
-                                         BME68X_I2C_ADDR_HIGH, data, length + 1,
-                                         device->get_i2c_wait_time());
+        err = device->get_i2c_bus()->master_write_to_device(
+            BME68X_I2C_ADDR_HIGH, data, length + 1,
+            device->get_i2c_wait_time());
     }
     return err;
 }

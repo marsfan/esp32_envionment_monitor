@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include "driver/i2c.h"
+#include "safe_i2c.h"
 
 #define VEML_ADDR 0x10                ///< I2C Address of the VEML 7700
 #define VEML_REG_BYTES 2              ///< Size of a single register on the VEML
@@ -117,10 +118,10 @@ class Veml7700 {
    public:
     /*!
      * @brief Instantiate the device.
-     * @param[in] i2c_port The i2c port to use for communicating with the sensor
+     * @param[in] i2c_bus Pointer to the SafeI2C  bus to use for transations
      * @param[in] wait_time The max wait time after an I2C operation.
      */
-    Veml7700(const i2c_port_t i2c_port, const TickType_t wait_time);
+    Veml7700(SafeI2C *i2c_bus, const TickType_t wait_time);
 
     /*!
      *  @brief Set the sensor configuration over I2C
@@ -228,8 +229,8 @@ class Veml7700 {
     /// @brief Sensor configuration
     veml_config_reg_t configuration;
 
-    /// @brief  I2C port to use
-    i2c_port_t i2c_port;
+    /// @brief  Pointer to the I2C bus to use
+    SafeI2C *i2c_bus;
 
     /// @brief Time to wait for I2C operations
     TickType_t wait_time;

@@ -78,12 +78,11 @@ static_assert((BSEC_NUMBER_OUTPUTS - 1) == (sizeof(bsec_structured_outputs_t) /
 class BSEC : private Bme688 {
    public:
     /// @brief Instantiate the device for use with the BSEC system
-    /// @param i2c_port The I2C port to use for communicating with the sensor.
-    /// @param i2c_wait_time THe max wait time after an i2c operation
+    /// @param i2c_bus The I2C Bus to use for communication with the sensor
+    /// @param i2c_wait_time The max wait time after an i2c operation
     /// @param temp_offset Offset to to apply to the temperature measurement, to
     /// correct for sensor or enclosure bias.
-    BSEC(const i2c_port_t i2c_port, const TickType_t i2c_wait_time,
-         float temp_offset);
+    BSEC(SafeI2C *i2c_bus, const TickType_t i2c_wait_time, float temp_offset);
 
     /// @brief Initialize BSEC and the sensor
     /// @return Result of the initialization.
