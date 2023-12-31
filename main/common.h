@@ -12,7 +12,9 @@
 #include <esp_log.h>
 
 // Max number of ticks to wait to get a mutex
-#define MAX_MUTEX_WAIT_TICKS 10
+// FIXME: This seems really big, but I had to increase it for SafeI2C. Need to
+// look into how to lower it
+#define MAX_MUTEX_WAIT_TICKS (1000 / portTICK_PERIOD_MS)
 
 #define LOGE_ON_ERROR(tag, func, msg, err)                                \
     if (err != ESP_OK) {                                                  \

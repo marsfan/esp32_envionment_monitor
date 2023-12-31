@@ -29,7 +29,9 @@
 #include <mqtt_task.h>
 
 // Tags for logging
-#define I2C_TASK_NAME "i2c_sensor_task"  /// Name for logging
+#define I2C_TASK_NAME "i2c_sensor_task"
+#define BSEC_TASK_NAME "bsec_task"
+#define VEML_TASK_NAME "veml_task"
 
 #define C_TO_F(celsius) \
     ((celsius * 9 / 5) + 32)  /// Convert Celsius to Fahrenheit
@@ -51,57 +53,47 @@ MQTTClient mqtt(MQTT_BROKER_URI, MQTT_USERNAME, MQTT_PASSWORD);
  *   Function Delcarations
  *============================================*/
 
-static void i2c_sensor_task(void* taskParam);
+static void bsec_task(void* taskParam);
+static void veml_task(void* taskParam);
 
 /*=============================================
  *   Function Definitions
  *============================================*/
 
-/// @brief The task for reading data from the i2c sensors.
-/// @param taskParam Parameters for the task. Currently unused
-static void i2c_sensor_task(void* taskParams) {
-    ESP_LOGI(I2C_TASK_NAME, "Starting I2C Task Up");
-    i2c_config_t i2c_config = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = I2C_MASTER_SDA_IO,
-        .scl_io_num = I2C_MASTER_SCL_IO,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master = {.clk_speed = I2C_MASTER_FREQ_HZ},
-        .clk_flags = 0,  // optional; you can use I2C_SCLK_SRC_FLAG_* flags to
-                         // choose i2c source clock here
-    };
-    ESP_ERROR_CHECK(i2c.init(&i2c_config));
+/// @brief Task for reading data from the BME688 sensor and processing it with
+/// BSEC.
+/// @param taskParam Parameters to pass into the task. Currently unused.
+static void bsec_task(void* taskParam) {
+    ESP_LOGI(BSEC_TASK_NAME, "Starting BSEC task");
 
-    // Configure BSEC library.
-    ESP_LOGI(I2C_TASK_NAME, "Starting BSEC. Result=%lld",
+    ESP_LOGI(BSEC_TASK_NAME, "Starting BSEC. Result=%lld",
              bsec.init().integer_result);
-    ESP_LOGI(I2C_TASK_NAME, "Setting subscription. Result=%d",
+    ESP_LOGI(BSEC_TASK_NAME, "Setting BSEC subscription. Result=%d",
              bsec.subscribe_all_non_scan(BSEC_SAMPLE_RATE_LP));
 
-    // Configure VEML
-    ESP_ERROR_CHECK(veml.set_configuration());
-    ESP_LOGI(I2C_TASK_NAME, "VEML7700 Gain Option: %d", veml.get_gain());
-    ESP_LOGI(I2C_TASK_NAME, "VEML7700 Integration Time: %d",
-             veml.get_integration_time());
-
-    // Continuously read from the sensors and print the result.
     while (true) {
-        // Run the BSEC periodic processing functionality.
-
+        // Run BSEC periodic processing functionality
         ESP_ERROR_CHECK(
             bsec.periodic_process(esp_timer_get_time() * 1000).integer_result);
 
-        // Read and log the ambient light level
-        ESP_ERROR_CHECK(veml.periodic_process());
-
-        // Calculate time to sleep until next periodic processing cycle.
         int64_t remaining_time =
             bsec.get_next_call_time_us() - esp_timer_get_time();
-
-        // FIXME: Use xTaskDelayUntil instead?
-
+        // TODO: Use xTaskDelayUntil instead?
         vTaskDelay(remaining_time / 1000 / portTICK_PERIOD_MS);
+    }
+}
+
+static void veml_task(void* taskParam) {
+    ESP_LOGI(VEML_TASK_NAME, "Starting VEML Task");
+    ESP_ERROR_CHECK(veml.set_configuration());
+    ESP_LOGI(VEML_TASK_NAME, "VEML7700 Gain Option: %d", veml.get_gain());
+    ESP_LOGI(VEML_TASK_NAME, "VEML7700 Integration Time: %d",
+             veml.get_integration_time());
+
+    while (true) {
+        // Read the VEML sensor every half a second.
+        ESP_ERROR_CHECK(veml.periodic_process());
+        vTaskDelay(500 / portTICK_PERIOD_MS);
     }
 }
 
@@ -128,6 +120,19 @@ extern "C" void app_main(void) {
     // Update system time
     ESP_ERROR_CHECK(wifi.update_time_from_network(20000));
 
+    // Initialize I2C
+    i2c_config_t i2c_config = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = I2C_MASTER_SDA_IO,
+        .scl_io_num = I2C_MASTER_SCL_IO,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master = {.clk_speed = I2C_MASTER_FREQ_HZ},
+        .clk_flags = 0,  // optional; you can use I2C_SCLK_SRC_FLAG_* flags to
+                         // choose i2c source clock here
+    };
+    ESP_ERROR_CHECK(i2c.init(&i2c_config));
+
     // TODO: MQTT in separate task.
     ESP_ERROR_CHECK(mqtt.start());
 
@@ -135,10 +140,15 @@ extern "C" void app_main(void) {
              uxTaskGetStackHighWaterMark(NULL));
 
     // Start up the sensor reading.
-    static uint8_t ucParameterToPass;
-    TaskHandle_t i2c_task_handle;
-    xTaskCreate(i2c_sensor_task, "I2C_SENSOR_TASK", 4096, &ucParameterToPass,
-                tskIDLE_PRIORITY, &i2c_task_handle);
+    static uint8_t veml_params;
+    TaskHandle_t veml_task_handle;
+    static uint8_t bsec_params;
+    TaskHandle_t bsec_task_handle;
+
+    xTaskCreate(bsec_task, BSEC_TASK_NAME, 2048, &bsec_params, tskIDLE_PRIORITY,
+                &bsec_task_handle);
+    xTaskCreate(veml_task, VEML_TASK_NAME, 2048, &veml_params, tskIDLE_PRIORITY,
+                &veml_task_handle);
 
     while (true) {
         bsec_structured_outputs_t data;
