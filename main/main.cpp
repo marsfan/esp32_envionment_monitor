@@ -99,6 +99,30 @@ static void veml_task(void* taskParam) {
 
 /// @brief Main task function.
 extern "C" void app_main(void) {
+    // Initialize I2C
+    i2c_config_t i2c_config = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = I2C_MASTER_SDA_IO,
+        .scl_io_num = I2C_MASTER_SCL_IO,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master = {.clk_speed = I2C_MASTER_FREQ_HZ},
+        .clk_flags = 0,  // optional; you can use I2C_SCLK_SRC_FLAG_* flags to
+                         // choose i2c source clock here
+    };
+    ESP_ERROR_CHECK(i2c.init(&i2c_config));
+
+    // Start up the sensor reading.
+    static uint8_t veml_params;
+    TaskHandle_t veml_task_handle;
+    static uint8_t bsec_params;
+    TaskHandle_t bsec_task_handle;
+
+    xTaskCreate(bsec_task, BSEC_TASK_NAME, 2048, &bsec_params, 1,
+                &bsec_task_handle);
+    xTaskCreate(veml_task, VEML_TASK_NAME, 2048, &veml_params, 1,
+                &veml_task_handle);
+
     // Initialize NVS flash for WiFi system
     // Initialize NVS
     esp_err_t ret = nvs_flash_init();
@@ -120,35 +144,11 @@ extern "C" void app_main(void) {
     // Update system time
     ESP_ERROR_CHECK(wifi.update_time_from_network(20000));
 
-    // Initialize I2C
-    i2c_config_t i2c_config = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = I2C_MASTER_SDA_IO,
-        .scl_io_num = I2C_MASTER_SCL_IO,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master = {.clk_speed = I2C_MASTER_FREQ_HZ},
-        .clk_flags = 0,  // optional; you can use I2C_SCLK_SRC_FLAG_* flags to
-                         // choose i2c source clock here
-    };
-    ESP_ERROR_CHECK(i2c.init(&i2c_config));
-
     // TODO: MQTT in separate task.
     ESP_ERROR_CHECK(mqtt.start());
 
     ESP_LOGI("app_main", "High Water Mark: %d",
              uxTaskGetStackHighWaterMark(NULL));
-
-    // Start up the sensor reading.
-    static uint8_t veml_params;
-    TaskHandle_t veml_task_handle;
-    static uint8_t bsec_params;
-    TaskHandle_t bsec_task_handle;
-
-    xTaskCreate(bsec_task, BSEC_TASK_NAME, 2048, &bsec_params, 1,
-                &bsec_task_handle);
-    xTaskCreate(veml_task, VEML_TASK_NAME, 2048, &veml_params, 1,
-                &veml_task_handle);
 
     while (true) {
         bsec_structured_outputs_t data;
