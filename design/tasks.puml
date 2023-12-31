@@ -1,0 +1,80 @@
+@startuml tasks
+
+Frame "Monitoring System" {
+
+
+    package Sensors {
+        [BME688] <<Sensor>>
+        [VEML7700] <<Sensor>>
+    }
+
+
+    package ESP32 {
+
+        [Main Task] <<Task>>
+        [BME Task] <<Task>>
+        [VEML Task] <<Task>>
+        [Oversight Task]<<Task>>
+        [Sensor Hub] <<Task>>
+        [Adafruit IO MQTT Task] <<Task>>
+        [Local MQTT Task] <<Task>>
+        [Web Server Task] <<Task>>
+
+        note top of [Main Task]: Starts WiFi and other tasks
+        note top of [Oversight Task]: Monitors System Resources
+        note left of [VEML Task]
+            Reads VEML7700 sensor
+            Automatically adjusts
+            gain and integration time
+        end note
+        note right of [BME Task]
+            Performs BSEC related processing
+        end note
+        note Left of [Sensor Hub]
+            Collects data from all sensors
+            provides data to other tasks.
+
+            Having separate sensor tasks and the sensor hub
+            has multiple advantages.
+            1. Different sensors can be read at different speeds.
+            2. Flexability to add/remove more sensors
+            3. Different sensors can use different interfaces.
+        end note
+
+
+        [BME Task] --> [Sensor Hub] : Queue
+        [VEML Task] --> [Sensor Hub]: Queue
+        [Sensor Hub] --> [Local MQTT Task] : Mutex
+        [Sensor Hub] --> [Adafruit IO MQTT Task] : Mutex
+        [Sensor Hub] --> [Web Server Task] : Mutex
+        [Oversight Task] --> [Web Server Task] : Mutex
+    }
+}
+
+
+frame "External Access"{
+    cloud {
+        [Adafruit IO]
+    }
+
+
+    frame Server {
+        [Local Broker]
+
+    }
+
+    frame "Local Computer" {
+        [Web Browser]
+    }
+}
+
+[VEML7700] --> [BME Task] : I2C
+[BME688] --> [VEML Task] : I2C
+
+
+[Adafruit IO MQTT Task]
+[Web Server Task] --> [Web Browser] : HTTP
+[Adafruit IO MQTT Task] --> [Adafruit IO] : MQTT
+[Local MQTT Task] --> [Local Broker] : MQTT
+
+@enduml
