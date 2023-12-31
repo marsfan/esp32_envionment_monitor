@@ -145,9 +145,9 @@ extern "C" void app_main(void) {
     static uint8_t bsec_params;
     TaskHandle_t bsec_task_handle;
 
-    xTaskCreate(bsec_task, BSEC_TASK_NAME, 2048, &bsec_params, tskIDLE_PRIORITY,
+    xTaskCreate(bsec_task, BSEC_TASK_NAME, 2048, &bsec_params, 1,
                 &bsec_task_handle);
-    xTaskCreate(veml_task, VEML_TASK_NAME, 2048, &veml_params, tskIDLE_PRIORITY,
+    xTaskCreate(veml_task, VEML_TASK_NAME, 2048, &veml_params, 1,
                 &veml_task_handle);
 
     while (true) {
