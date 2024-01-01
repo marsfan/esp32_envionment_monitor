@@ -36,15 +36,27 @@
 #define VEML_TASK_NAME "veml_task"
 #define SENSOR_HUB_TASK_NAME "sensor_hub"
 
+// Priority of various tasks.
+// Higher number = Higher Priority
+/// @brief Priority for tasks that read sensors
+#define SENSOR_TASK_PRI 1U
+/// @brief Priority of the sensor hub task
+/// @details Higher priority than sensor tasks to ensure it can pull data off
+/// the queue faster than they can insert it
+#define SENSOR_HUB_TASK_PRI 2U
+
+/// @brief Stack size allocated for all tasks
+#define TASK_STACK_SIZE 2048
+
 #define C_TO_F(celsius) \
     ((celsius * 9 / 5) + 32)  /// Convert Celsius to Fahrenheit
 
 // I2C Configuration
-#define I2C_MASTER_SDA_IO 32                     /// I2C SDA Pin
-#define I2C_MASTER_SCL_IO 33                     /// I2C SCL Pin
-#define I2C_MASTER_FREQ_HZ 100000                /// I2C Frequency
-#define I2C_MASTER_PORT I2C_NUM_0                /// I2C Bus Number
-#define I2C_TIMEOUT (1000 / portTICK_PERIOD_MS)  /// I2C Transaction Timeout
+#define I2C_MASTER_SDA_IO 32                     ///< I2C SDA Pin
+#define I2C_MASTER_SCL_IO 33                     ///< I2C SCL Pin
+#define I2C_MASTER_FREQ_HZ 100000                ///< I2C Frequency
+#define I2C_MASTER_PORT I2C_NUM_0                ///< I2C Bus Number
+#define I2C_TIMEOUT (1000 / portTICK_PERIOD_MS)  ///< I2C Transaction Timeout
 
 SafeI2C i2c(I2C_MASTER_PORT);
 Veml7700 veml(&i2c, I2C_TIMEOUT);
@@ -130,8 +142,9 @@ extern "C" void app_main(void) {
     TaskHandle_t bsec_task_handle;
 
     // Start the sensor hub task
-    xTaskCreate(sensor_hub_task, SENSOR_HUB_TASK_NAME, 2048, &sensor_hub_params,
-                2, &sensor_hub_task_handle);
+    xTaskCreate(sensor_hub_task, SENSOR_HUB_TASK_NAME, TASK_STACK_SIZE,
+                &sensor_hub_params, SENSOR_HUB_TASK_PRI,
+                &sensor_hub_task_handle);
 
     // Initialize I2C
     i2c_config_t i2c_config = {
@@ -148,10 +161,10 @@ extern "C" void app_main(void) {
 
     // Start up the sensor reading.
 
-    xTaskCreate(bsec_task, BSEC_TASK_NAME, 2048, &bsec_params, 1,
-                &bsec_task_handle);
-    xTaskCreate(veml_task, VEML_TASK_NAME, 2048, &veml_params, 1,
-                &veml_task_handle);
+    xTaskCreate(bsec_task, BSEC_TASK_NAME, TASK_STACK_SIZE, &bsec_params,
+                SENSOR_TASK_PRI, &bsec_task_handle);
+    xTaskCreate(veml_task, VEML_TASK_NAME, TASK_STACK_SIZE, &veml_params,
+                SENSOR_TASK_PRI, &veml_task_handle);
 
     // Initialize NVS flash for WiFi system
     // Initialize NVS
