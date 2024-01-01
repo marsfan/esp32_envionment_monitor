@@ -13,7 +13,9 @@
 #include <driver/i2c.h>
 #include <stdbool.h>
 
-class SafeI2C {
+#include "mutex_base.h"
+
+class SafeI2C : protected MutexBase {
    public:
     /// @brief Construct a SafeI2C instance.
     /// @param i2c_port The I2C port to use
@@ -56,18 +58,6 @@ class SafeI2C {
 
     /// @brief The I2C Config Stuct
     i2c_config_t config;
-
-    /// @brief Mutex to ensure task safety on the I2C bus.
-    SemaphoreHandle_t i2c_mutex;
-
-    /// @brief Obtain the mutex
-    /// @param[in] func The name of the function that is taking the mutex.
-    /// @return Whether or not the mutex was successfully taken.
-    bool get_mutex(const char* const func);
-
-    /// @brief Release the mutex
-    /// @param[in] func The name of the function that is releasing the mutex
-    void release_mutex(const char* const func);
 };
 
 #endif  // SAFE_I2C_H
