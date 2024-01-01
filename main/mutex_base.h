@@ -8,7 +8,8 @@
 #ifndef MUTEX_BASE_H
 #define MUTEX_BASE_H
 
-#include <semaphore.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 class MutexBase {
    protected:

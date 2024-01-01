@@ -11,7 +11,7 @@
 
 #include "common.h"
 
-MutexBase::MutexBase() {
+MutexBase::MutexBase(void) {
     // TODO: Use static version?
     this->mutex = xSemaphoreCreateMutex();
     if (this->mutex == NULL) {
