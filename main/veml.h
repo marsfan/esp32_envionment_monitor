@@ -238,9 +238,6 @@ class Veml7700 {
     /// @brief Values from the most recent sensor measurement
     veml_output_t last_output;
 
-    /// @brief Mutex to ensure that data can be accessed from multiple threads.
-    SemaphoreHandle_t output_mutex;
-
     /*!
      * @brief Write to the specific register
      * @param[in] reg The register to write to

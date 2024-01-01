@@ -21,11 +21,6 @@
 BSEC::BSEC(SafeI2C *i2c_bus, const TickType_t i2c_wait_time, float temp_offset)
     : Bme688(i2c_bus, i2c_wait_time) {
     this->temp_offset = temp_offset;
-    this->output_mutex = xSemaphoreCreateMutex();
-    if (this->output_mutex == NULL) {
-        ESP_LOGE(LOG_TAG, "Failed to create mutex");
-        ESP_ERROR_CHECK(ESP_FAIL);
-    }
 }
 
 // See bsec.h for documentation
@@ -159,18 +154,8 @@ bsec_result_t BSEC::periodic_process(int64_t timestamp_ns) {
 
 // See bsec.h for documentation
 void BSEC::get_output_data(bsec_structured_outputs_t *output_data) {
-    // Take the mutex so we can safely operate on the data.
-    if (xSemaphoreTake(this->output_mutex, MAX_MUTEX_WAIT_TICKS) == pdTRUE) {
-        (void)memcpy(output_data, &this->outputs,
-                     sizeof(bsec_structured_outputs_t));
-        // Release the mutex
-        if (xSemaphoreGive(this->output_mutex) != pdTRUE) {
-            ESP_LOGE(LOG_TAG,
-                     "Failed to release mutex after reading output data");
-        }
-    } else {
-        ESP_LOGE(LOG_TAG, "Failed to get mutex for reading output data");
-    }
+    (void)memcpy(output_data, &this->outputs,
+                 sizeof(bsec_structured_outputs_t));
 }
 
 // See bsec.h for documentation
@@ -313,10 +298,6 @@ uint8_t BSEC::add_sig_cond(const uint8_t input_signal, const float value,
 // See bsec.h for documentation
 void BSEC::update_output_structure(bsec_output_t *outputs,
                                    const uint8_t num_outputs) {
-    bsec_structured_outputs_t local_struct;
-
-    // Build up a local data struct outside of the mutex.
-    (void)memset(&local_struct, 0, sizeof(bsec_structured_outputs_t));
     for (int i = 0; i < num_outputs; i++) {
         bsec_output_t output = outputs[i];
         bsec_virtual_sensor_data_t *data = NULL;
@@ -324,58 +305,58 @@ void BSEC::update_output_structure(bsec_output_t *outputs,
         // Get pointer to correct part of struct.
         switch (output.sensor_id) {
             case BSEC_OUTPUT_IAQ:
-                data = &local_struct.iaq;
+                data = &this->outputs.iaq;
                 break;
             case BSEC_OUTPUT_STATIC_IAQ:
-                data = &local_struct.static_iaq;
+                data = &this->outputs.static_iaq;
                 break;
             case BSEC_OUTPUT_CO2_EQUIVALENT:
-                data = &local_struct.co2_eq;
+                data = &this->outputs.co2_eq;
                 break;
             case BSEC_OUTPUT_BREATH_VOC_EQUIVALENT:
-                data = &local_struct.breath_voc_eq;
+                data = &this->outputs.breath_voc_eq;
                 break;
             case BSEC_OUTPUT_RAW_TEMPERATURE:
-                data = &local_struct.raw_temp;
+                data = &this->outputs.raw_temp;
                 break;
             case BSEC_OUTPUT_RAW_PRESSURE:
-                data = &local_struct.raw_pressure;
+                data = &this->outputs.raw_pressure;
                 break;
             case BSEC_OUTPUT_RAW_HUMIDITY:
-                data = &local_struct.raw_pressure;
+                data = &this->outputs.raw_pressure;
                 break;
             case BSEC_OUTPUT_RAW_GAS:
-                data = &local_struct.raw_gas;
+                data = &this->outputs.raw_gas;
                 break;
             case BSEC_OUTPUT_STABILIZATION_STATUS:
-                data = &local_struct.stabilization_status;
+                data = &this->outputs.stabilization_status;
                 break;
             case BSEC_OUTPUT_RUN_IN_STATUS:
-                data = &local_struct.run_in_status;
+                data = &this->outputs.run_in_status;
                 break;
             case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE:
-                data = &local_struct.compensated_temp;
+                data = &this->outputs.compensated_temp;
                 break;
             case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY:
-                data = &local_struct.compensated_humidity;
+                data = &this->outputs.compensated_humidity;
                 break;
             case BSEC_OUTPUT_GAS_PERCENTAGE:
-                data = &local_struct.gas_percentage;
+                data = &this->outputs.gas_percentage;
                 break;
             case BSEC_OUTPUT_GAS_ESTIMATE_1:
-                data = &local_struct.gas_estimate_1;
+                data = &this->outputs.gas_estimate_1;
                 break;
             case BSEC_OUTPUT_GAS_ESTIMATE_2:
-                data = &local_struct.gas_estimate_2;
+                data = &this->outputs.gas_estimate_2;
                 break;
             case BSEC_OUTPUT_GAS_ESTIMATE_3:
-                data = &local_struct.gas_estimate_3;
+                data = &this->outputs.gas_estimate_3;
                 break;
             case BSEC_OUTPUT_GAS_ESTIMATE_4:
-                data = &local_struct.gas_estimate_4;
+                data = &this->outputs.gas_estimate_4;
                 break;
             case BSEC_OUTPUT_RAW_GAS_INDEX:
-                data = &local_struct.raw_gas_index;
+                data = &this->outputs.raw_gas_index;
                 break;
             default:
                 data = NULL;
@@ -392,18 +373,5 @@ void BSEC::update_output_structure(bsec_output_t *outputs,
             ESP_LOGE(LOG_TAG, "Unknown virtual sensor type of %d. Skipping",
                      output.sensor_id);
         }
-    }
-
-    // Take a mutex and copy the local data into mutex protected attribute
-    // This way we do as little as possible inside the mutex
-    if (xSemaphoreTake(this->output_mutex, MAX_MUTEX_WAIT_TICKS) == pdTRUE) {
-        (void)memcpy(&this->outputs, &local_struct,
-                     sizeof(bsec_structured_outputs_t));
-        if (xSemaphoreGive(this->output_mutex) != pdTRUE) {
-            ESP_LOGE(LOG_TAG,
-                     "Failed to release mutex after updating output structure");
-        }
-    } else {
-        ESP_LOGE(LOG_TAG, "Failed to get mutex for updating output structure");
     }
 }
