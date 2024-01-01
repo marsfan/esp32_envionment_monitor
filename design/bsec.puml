@@ -1,0 +1,30 @@
+@startuml BSEC Sensor task
+
+state "Initialize BME688 sensor" as SI : Initialize the sensor itself
+state "Initialize BSEC Library" as BI : Initialize the BSEC library
+state "Load BSEC Config" as LC : Load BSEC Config from Flash if present
+state "Load BSEC State " as LS : Load BSEC State from Flash if present
+state "Subscribe to outputs" as SUB : Subscribe to all non gas scan ouputs from the BSEC library.
+state "Get Sensor Config" as GSC : Get requested sensor config from the BSEC library.
+state "Configure Sensor" as CFG : Configure BME688 based on requested config
+state "Read Sensor Data" as RD : Read parameters from BME688
+state "Process Data" as PROC : Process parameters using BSEC library
+state "Get Outputs" as GO : Get outputs from BSEC library.
+state "Send Data To Sensor Hub" as SEND : Data is sent using a queue.
+state "Sleep" as SLEEP : Sleep the amount of time requested by BSEC library.
+
+[*] -> SI
+SI --> BI
+BI --> LC
+LC --> LS
+LS --> SUB
+SUB --> GSC
+GSC --> CFG
+CFG --> RD
+RD --> PROC
+PROC --> GO
+GO --> SEND
+SEND --> SLEEP
+SLEEP --> GSC
+
+@enduml

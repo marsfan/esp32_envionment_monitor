@@ -1,0 +1,17 @@
+@startuml sensor_hub_task
+
+
+state "Read Queue" as RQ : * Task suspends when queueis empty\n* When there are items in the queue, the first item is removed from it
+state "Get Mutex" as GM : Obtain internal mutex to allow writing to data
+state "Copy Data" as CD : Copy data to internal data structure
+state "Release Mutex" as RM : Release Mutex so other tasks can read the data.
+
+
+[*] -> RQ
+RQ --> GM
+GM --> CD
+CD --> RM
+RM --> RQ
+
+
+@enduml

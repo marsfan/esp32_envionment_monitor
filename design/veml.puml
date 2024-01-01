@@ -1,0 +1,23 @@
+@startuml VEML Sensor Task
+
+state "Configure Sensor" as CFG : Set sensor initial gain integration time
+state "Read Sensor Data" as RD : Data is read via I2C
+state "Compute LUX" as CM : Data computed from ALS, gain, integration time
+state "Lower Gain/Integration Time" as LOW : Switch gain/integration time to get smaller multiplier.\nThen sleep for given integration time
+state "Raise Gain/Integration Time" as RAISE : Switch gain/integration time to get higher multiplier.\nThen sleep for given integration time
+state "Send data to Sensor Hub" as SEND : Data is sent using a queue.
+state "Sleep" as SLEEP : Sleep for minimum 500msec. Might sleep longer if integration time is higher.
+
+[*] -> CFG
+CFG --> RD
+RD --> LOW : ALS Value within 10% of max value
+LOW --> RD
+RD --> RAISE: ALS Value within 10% of min value
+RAISE --> RD
+
+RD --> CM : ALS Value not with 10% of min/max
+CM --> SEND
+SEND --> SLEEP
+SLEEP --> RD
+
+@enduml
