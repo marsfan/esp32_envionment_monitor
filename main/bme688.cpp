@@ -295,7 +295,7 @@ int8_t i2c_read(uint8_t reg_addr, uint8_t* reg_data, uint32_t length,
 
 /*!
  * @brief Method for writing to the sensor over I2C
- * @param[in] The register to write to
+ * @param[in] reg_addr The register to write to
  * @param[in] reg_data Pointer to an array of the data to write.
  * @param[in] length The length of the data to write
  * @param[in,out] intf_pointer Pointer to the bme688 object to use for

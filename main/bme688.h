@@ -105,7 +105,6 @@ class Bme688 {
     /*!
      * @brief Get the remaining duration that can be used for heating.
      * @param[in] op_mode The operating mode of the sensor.
-     * @param[in] conf The sensor configuration to use.
      * @return Measurement duration in microseconds
      * */
     uint32_t get_meas_duration(const uint8_t op_mode);

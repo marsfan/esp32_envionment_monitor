@@ -46,7 +46,8 @@ typedef struct {
 /// @details This is used to provide the same information as in the normal
 /// output array, except in a more well-formatted form, so finding the correct
 /// sensor output does not require searching through the array
-/// @ref bsec_virtual_sensor_t for documentation on the virtual sensors
+/// See bsec_virtual_sensor_t  in the BSEC documentation for information about
+/// virtual sensors
 typedef struct {
     bsec_virtual_sensor_data_t iaq;            ///< Indoor air quality
     bsec_virtual_sensor_data_t static_iaq;     ///< Unscaled indoor air quality
@@ -106,17 +107,13 @@ class BSEC : private Bme688 {
     /// @param requested_virtual_sensors The requested virtual sensors to get
     /// @param n_requested_virtual_sensors The total number of requested virtual
     /// sensors
-    /// @param required_sensor_settings Pointer to a structure to hold the
-    /// required physical sensors
-    /// @param n_required_sensor_settings Pointer to the total number of
-    /// required sensors.
     /// @return Result of updating the requested virtual sensors
     bsec_library_return_t update_subscription(
         const bsec_sensor_configuration_t *const requested_virtual_sensors,
         const uint8_t n_requested_virtual_sensors);
 
     /// @brief Subscribe to all non gas-scan mode virtual sensors.
-    /// @param refresh_rate The refresh rate to subscribe all sensors to
+    /// @param sample_rate The refresh rate to subscribe all sensors to
     /// @return Result of subscribing to the sensors.
     bsec_library_return_t subscribe_all_non_scan(float sample_rate);
 
