@@ -188,7 +188,8 @@ extern "C" void app_main(void) {
     ESP_ERROR_CHECK(wifi.connect_to_ap(WIFI_SSID, WIFI_PASSWORD));
 
     // Update system time
-    ESP_ERROR_CHECK(wifi.update_time_from_network(20000));
+    // FIXME: Find a way to handle this in a non-blocking form
+    // ESP_ERROR_CHECK(wifi.update_time_from_network(20000));
 
     // TODO: MQTT in separate task.
     ESP_ERROR_CHECK(mqtt.start());
