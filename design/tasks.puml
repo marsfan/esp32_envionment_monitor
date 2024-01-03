@@ -19,10 +19,12 @@ Frame "Monitoring System" {
         [Adafruit IO MQTT Task] <<Task>>
         [Local MQTT Task] <<Task>>
         [Web Server Task] <<Task>>
+        () "Sensor Queue" as SQ
+        () "Data Mutex" as DM
 
         note top of [Main Task]: Starts WiFi and other tasks
         note top of [Oversight Task]: Monitors System Resources
-        note left of [VEML Task]
+        note right of [VEML Task]
             Reads VEML7700 sensor
             Automatically adjusts
             gain and integration time
@@ -42,11 +44,14 @@ Frame "Monitoring System" {
         end note
 
 
-        [BME Task] --> [Sensor Hub] : Queue
-        [VEML Task] --> [Sensor Hub]: Queue
-        [Sensor Hub] --> [Local MQTT Task] : Mutex
-        [Sensor Hub] --> [Adafruit IO MQTT Task] : Mutex
-        [Sensor Hub] --> [Web Server Task] : Mutex
+        [BME Task] --> SQ
+        [VEML Task] --> SQ
+        SQ --> [Sensor Hub]
+        [Sensor Hub] --> DM
+        DM --> [Local MQTT Task]
+        DM --> [Adafruit IO MQTT Task]
+        DM --> [Web Server Task]
+
         [Oversight Task] --> [Web Server Task] : Mutex
     }
 }
