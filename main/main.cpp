@@ -47,6 +47,8 @@
 
 /// @brief Stack size allocated for all tasks
 #define TASK_STACK_SIZE 2048
+/// @brief Stack size for the BSEC task
+#define BSEC_STACK_SIZE 4096
 
 #define C_TO_F(celsius) \
     ((celsius * 9 / 5) + 32)  /// Convert Celsius to Fahrenheit
@@ -161,7 +163,7 @@ extern "C" void app_main(void) {
 
     // Start up the sensor reading.
 
-    xTaskCreate(bsec_task, BSEC_TASK_NAME, TASK_STACK_SIZE, &bsec_params,
+    xTaskCreate(bsec_task, BSEC_TASK_NAME, BSEC_STACK_SIZE, &bsec_params,
                 SENSOR_TASK_PRI, &bsec_task_handle);
     xTaskCreate(veml_task, VEML_TASK_NAME, TASK_STACK_SIZE, &veml_params,
                 SENSOR_TASK_PRI, &veml_task_handle);
