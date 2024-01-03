@@ -181,7 +181,8 @@ extern "C" void app_main(void) {
     // Initialize the WiFi Connection.
     ESP_ERROR_CHECK(wifi.init());
     // Scan for and print found networks
-    ESP_ERROR_CHECK(wifi.scan_for_networks());
+    // FIXME: For some reason using this causes crashes
+    // ESP_ERROR_CHECK(wifi.scan_for_networks());
 
     // Connect to specific wifi network
     ESP_ERROR_CHECK(wifi.connect_to_ap(WIFI_SSID, WIFI_PASSWORD));
