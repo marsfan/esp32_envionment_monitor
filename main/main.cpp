@@ -214,7 +214,7 @@ extern "C" void app_main(void) {
                  data.bsec.compensated_temp.accuracy,
                  data.bsec.compensated_temp.valid);
         ESP_LOGI("app_main", "Humidity: %f, Acc: %d, valid: %d",
-                 C_TO_F(data.bsec.compensated_humidity.signal),
+                 data.bsec.compensated_humidity.signal,
                  data.bsec.compensated_humidity.accuracy,
                  data.bsec.compensated_humidity.valid);
         ESP_LOGI("app_main", "Pressure: %f, Acc: %d, valid: %d",

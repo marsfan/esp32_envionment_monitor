@@ -323,7 +323,7 @@ void BSEC::update_output_structure(bsec_output_t *outputs,
                 data = &this->outputs.raw_pressure;
                 break;
             case BSEC_OUTPUT_RAW_HUMIDITY:
-                data = &this->outputs.raw_pressure;
+                data = &this->outputs.raw_humidity;
                 break;
             case BSEC_OUTPUT_RAW_GAS:
                 data = &this->outputs.raw_gas;
