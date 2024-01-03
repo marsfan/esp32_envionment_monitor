@@ -69,11 +69,11 @@ void SensorHub::task_logic(void) {
             if (this->take_mutex(LOG_TAG, __func__)) {
                 switch (entry.type) {
                     case SENSOR_BSEC:
-                        (void)memcpy(&this->data, &entry.data.bsec,
+                        (void)memcpy(&this->data.bsec, &entry.data.bsec,
                                      sizeof(bsec_structured_outputs_t));
                         break;
                     case SENSOR_VEML7700:
-                        (void)memcpy(&this->data, &entry.data.veml,
+                        (void)memcpy(&this->data.veml, &entry.data.veml,
                                      sizeof(veml_output_t));
                         break;
                 }
