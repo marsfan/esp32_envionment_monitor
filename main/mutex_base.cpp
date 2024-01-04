@@ -33,8 +33,10 @@ MutexBase::MutexBase(const TickType_t wait_time) {
 bool MutexBase::take_mutex(const char *const tag, const char *const func) {
     bool result = true;
     if (xSemaphoreTake(this->mutex, this->wait_time) != pdTRUE) {
-        // TODO: Log task name too?
-        ESP_LOGE(tag, "Failed to take mutex in function %s", func);
+        TaskStatus_t status;
+        vTaskGetInfo(NULL, &status, pdFALSE, eRunning);
+        ESP_LOGE(tag, "Failed to take mutex in function %s in task %s", func,
+                 status.pcTaskName);
         result = false;
     }
     return result;
@@ -42,7 +44,9 @@ bool MutexBase::take_mutex(const char *const tag, const char *const func) {
 
 void MutexBase::release_mutex(const char *const tag, const char *const func) {
     if (xSemaphoreGive(this->mutex) != pdTRUE) {
-        // TODO: Log task name too?
-        ESP_LOGE(tag, "Failed to release the mutex in function %s", func);
+        TaskStatus_t status;
+        vTaskGetInfo(NULL, &status, pdFALSE, eRunning);
+        ESP_LOGE(tag, "Failed to release the mutex in function %s in task %s",
+                 func, status.pcTaskName);
     }
 }
