@@ -7,6 +7,7 @@
 
 #include "mqtt_task.h"
 
+#include <esp_crt_bundle.h>
 #include <esp_err.h>
 #include <esp_log.h>
 #include <mqtt_client.h>
@@ -33,6 +34,7 @@ MQTTClient::MQTTClient(const char *const uri, const char *const username,
     mqtt_config.broker.address.uri = uri;
     mqtt_config.credentials.username = username;
     mqtt_config.credentials.authentication.password = password;
+    mqtt_config.broker.verification.crt_bundle_attach = esp_crt_bundle_attach;
     this->client_handle = esp_mqtt_client_init(&mqtt_config);
     if (this->client_handle == NULL) {
         ESP_LOGE(MQTT_LOG_TAG, "Failed to init MQTT client for uri: %s", uri);
