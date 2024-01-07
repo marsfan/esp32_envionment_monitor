@@ -8,7 +8,6 @@ RUN /opt/esp/python_env/idf5.3_py3.10_env/bin/pip install pyclang[html] rich -U
 COPY . /project
 WORKDIR /project
 # Remove prebuilt if it is present
-RUN rm -r build
 
 # Create the script that runs the linter and generates the HTML report
 RUN echo 'idf.py clang-check --run-clang-tidy-options="-config-file ./.clang-tidy" --exclude-paths="managed_components" --exclude-paths="main/bme68x_sensor_api"' >> run_clang_check.sh
