@@ -1,8 +1,10 @@
 FROM espressif/idf
-# Install necessary packaages
-RUN apt update && apt install clang-tidy -y && apt clean
-RUN /opt/esp/idf/tools/idf_tools.py install esp-clang
-RUN /opt/esp/python_env/idf5.3_py3.10_env/bin/pip install pyclang[html] rich -U
+# Install necessary packages
+RUN apt update && apt install clang-tidy -y && apt clean && rm -rf /var/lib/apt/lists/*
+RUN /opt/esp/idf/tools/idf_tools.py install esp-clang && \
+    /opt/esp/python_env/idf5.3_py3.10_env/bin/pip cache purge
+RUN /opt/esp/python_env/idf5.3_py3.10_env/bin/pip install pyclang[html] rich -U && \
+    /opt/esp/python_env/idf5.3_py3.10_env/bin/pip cache purge
 
 # Copy code over to the container
 COPY . /project
