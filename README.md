@@ -29,6 +29,12 @@ Simple create the file with the following preprocessor definitions
 
 More fields will be added to this over time
 
+## Linting
+
+I can't seem to get the IDF clang-tidy working right on Windows, so I set
+up a container using Docker that will run the linter, and copy the results
+back to the host system. Run it with `make lint`.
+
 ## Cable Color Mapping
 
 I am using my ribbon cable adapter from the Bus Pirate with the ESP-PROG

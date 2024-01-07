@@ -5,3 +5,6 @@ main/bsec/inc
 main/bsec/bin
 main/private_config.h
 managed_components
+warnings.txt
+html_report
+report.json

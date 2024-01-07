@@ -1,0 +1,1 @@
+Checks: '*,-altera-*,-android-*,-llvmlibc-*,-modernize-redundant-void-arg,-modernize-use-trailing-return-type'
