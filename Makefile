@@ -4,7 +4,7 @@ lint:
 	-pwsh -C "rm -r -Force html_report"
 	-pwsh -C "rm -r -Force report.json"
 	-pwsh -C "rm -r -Force warnings.txt"
-	-rm -r html_report warnings.txt
+	-rm -rf html_report warnings.txt report.json
 	-docker image rm idflint
 	docker build -f Dockerfile.lint -t idflint . && docker run --name=idf_linter -it idflint
 	docker cp idf_linter:/project/warnings.txt $(CURDIR)/warnings.txt
