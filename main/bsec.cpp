@@ -6,7 +6,7 @@
 #include "bsec.h"
 
 #include <esp_log.h>
-#include <string.h>
+#include <cstring>
 
 #include "bsec/inc/bsec_interface.h"
 #include "common.h"

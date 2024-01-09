@@ -7,8 +7,9 @@
 
 #include <driver/i2c.h>
 #include <esp_log.h>
-#include <stdio.h>
-#include <string.h>
+
+#include <cstdio>
+#include <cstring>
 
 #include "common.h"
 

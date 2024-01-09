@@ -8,7 +8,8 @@
 
 #include <esp_log.h>
 #include <esp_netif_sntp.h>
-#include <string.h>
+
+#include <cstring>
 
 #include "common.h"
 

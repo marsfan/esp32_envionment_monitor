@@ -8,7 +8,8 @@
 
 #include <esp_err.h>
 #include <esp_log.h>
-#include <string.h>
+
+#include <cstring>
 
 #include "common.h"
 

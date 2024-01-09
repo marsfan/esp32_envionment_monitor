@@ -5,7 +5,7 @@
  */
 #include "safe_i2c.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "common.h"
 

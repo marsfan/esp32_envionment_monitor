@@ -8,7 +8,8 @@
 
 #include <esp_log.h>
 #include <esp_rom_sys.h>
-#include <string.h>
+
+#include <cstring>
 
 #include "bme68x_sensor_api/bme68x.h"
 

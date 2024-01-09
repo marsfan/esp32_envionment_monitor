@@ -11,7 +11,8 @@
 #include <esp_err.h>
 #include <esp_log.h>
 #include <mqtt_client.h>
-#include <string.h>
+
+#include <cstring>
 
 #define MQTT_LOG_TAG "mqtt_task"
 
