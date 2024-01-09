@@ -1,1 +1,1 @@
-Checks: '*,-altera-*,-android-*,-llvmlibc-*,-modernize-redundant-void-arg,-modernize-use-trailing-return-type'
+Checks: '*,-altera-*,-android-*,-llvmlibc-*,-modernize-redundant-void-arg,-modernize-use-trailing-return-type,-cppcoreguidelines-avoid-do-while,-cppcoreguidelines-pro-type-vararg,-hicpp-vararg'
