@@ -254,8 +254,7 @@ int8_t Bme688::set_heater_conf(uint8_t op_mode) {
  * descriptors for callbacks
  * */
 static void delay(uint32_t period_us, void* intf_ptr) {
-    const uint64_t tick_period_us = configTICK_RATE_HZ * 1000000;
-    if (period_us < tick_period_us) {
+    if (period_us < (portTICK_PERIOD_MS * 1000)) {
         // TODO: ESP_LOGV (verbose) message for if this is used?
         // TODO: should we enter a critical section here to ensure we don't
         // context switch?
