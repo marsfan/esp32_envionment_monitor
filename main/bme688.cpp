@@ -244,30 +244,29 @@ int8_t Bme688::set_heater_conf(uint8_t op_mode) {
 
 /*!
  * @brief Method for sleeping after an operation.
- * @details If the delay time is less than 1 ms (i.e 1000 us), the ROM function
- * esp_rom_delay_us will be used instead. This operates outside normal RTOS
- * functionality. See https://esp32.com/viewtopic.php?t=880 and
+ * @details If the delay time is less than possible for the configured tick rate
+ * (set with configTICK_RATE_HZ), the ROM function esp_rom_delay_us will be used
+ * instead. This operates outside normal RTOS functionality. See
+ * https://esp32.com/viewtopic.php?t=880 and
  * https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/internal-unstable.html?highlight=esp_rom_sys#_CPPv416esp_rom_delay_us8uint32_t
  * @param[in] period_us The period to sleep in microseconds
  * @param[in,out] intf_pointer Pointer for linking interface device
  * descriptors for callbacks
  * */
 static void delay(uint32_t period_us, void* intf_ptr) {
-    TickType_t delay_time = 0;
-    if (period_us < 1000) {
+    const uint64_t tick_period_us = configTICK_RATE_HZ * 1000000;
+    if (period_us < tick_period_us) {
         // TODO: ESP_LOGV (verbose) message for if this is used?
-        // TODO: SHoudl we enter a critical section here to ensure we don't
-        // context
-        // switch?https://docs.espressif.com/projects/esp-idf/en/v5.1.2/esp32/api-reference/system/freertos_idf.html
+        // TODO: should we enter a critical section here to ensure we don't
+        // context switch?
+        // https://docs.espressif.com/projects/esp-idf/en/v5.1.2/esp32/api-reference/system/freertos_idf.html
         // TODO: Could also look into copying the code from delayMicroseconds in
         // the arduino HAL.(esp32-hal-misc.c), which seems to use a HW timer and
         // NOPs to sleep
         esp_rom_delay_us(period_us);
-        delay_time = 1 / portTICK_PERIOD_MS;
     } else {
-        delay_time = period_us / 1000 / portTICK_PERIOD_MS;
+        vTaskDelay(period_us / 1000 / portTICK_PERIOD_MS);
     }
-    vTaskDelay(delay_time);
 }
 
 /*!
