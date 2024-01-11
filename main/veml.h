@@ -212,18 +212,14 @@ class Veml7700 {
      * @brief Read the outputs from the sensor and update internal structure
      * @details Will also perform any necessary processing to update the gain
      * and integration time to a useful range.
-     * @details This function uses mutexes to be thread safe.
-     * @return Result of locking and unlocking the mutex.
      */
-    esp_err_t periodic_process(void);
+    void periodic_process(void);
 
     /*!
      * @brief Get the most recently read data from the sensor
-     * @details This function uses mutexes to be thread safe.
      * @param data Pointer to a structure to hold the data
-     * @return Result of locking and unlockign the mutex.
      */
-    esp_err_t get_outputs(veml_output_t *data);
+    void get_outputs(veml_output_t *data);
 
    private:
     /// @brief Sensor configuration

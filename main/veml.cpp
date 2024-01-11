@@ -41,7 +41,7 @@ esp_err_t Veml7700::set_configuration(const veml_config_reg_t *const config) {
     /// Copy configuration to store internally
     (void)memcpy(&this->configuration, config, sizeof(veml_config_reg_t));
 
-    esp_err_t err =
+    const esp_err_t err =
         this->write_to_reg(VEML_CONFIG_REG, &this->configuration.regs_16bit);
     LOGE_ON_ERROR(VEML_TAG, __func__,
                   "Failed setting VEML7700 Configuring Register", err);
@@ -51,7 +51,7 @@ esp_err_t Veml7700::set_configuration(const veml_config_reg_t *const config) {
 
 // See veml.h for documentation
 esp_err_t Veml7700::get_configuration(void) {
-    esp_err_t err =
+    const esp_err_t err =
         this->read_from_reg(VEML_CONFIG_REG, &this->configuration.regs_16bit);
     LOGE_ON_ERROR(VEML_TAG, __func__,
                   "Failed reading VEML7700 Configuring Register", err);
@@ -60,7 +60,7 @@ esp_err_t Veml7700::get_configuration(void) {
 
 // See veml.h for documentation
 esp_err_t Veml7700::get_configuration(veml_config_reg_t *config) {
-    esp_err_t read_err = this->get_configuration();
+    const esp_err_t read_err = this->get_configuration();
     if (read_err == ESP_OK) {
         (void)memcpy(&this->configuration, config, sizeof(veml_config_reg_t));
     }
@@ -69,16 +69,16 @@ esp_err_t Veml7700::get_configuration(veml_config_reg_t *config) {
 
 // See veml.h for documentation
 uint16_t Veml7700::get_ambient_level(void) {
-    uint16_t data;
-    esp_err_t err = this->read_from_reg(VEML_ALS_LEVEL_REG, &data);
+    uint16_t data = 0;
+    const esp_err_t err = this->read_from_reg(VEML_ALS_LEVEL_REG, &data);
     LOGE_ON_ERROR(VEML_TAG, __func__, "Failed Reading ALS Register", err);
     return data;
 }
 
 // See veml.h for documentation
 uint16_t Veml7700::get_white_level(void) {
-    uint16_t data;
-    esp_err_t err = this->read_from_reg(VEML_WHITE_LEVEL_REG, &data);
+    uint16_t data = 0;
+    const esp_err_t err = this->read_from_reg(VEML_WHITE_LEVEL_REG, &data);
     LOGE_ON_ERROR(VEML_TAG, __func__, "Failed reading white level register",
                   err);
     return data;
@@ -127,10 +127,9 @@ esp_err_t Veml7700::set_power_state(const veml_power_options_e state) {
 }
 
 // See veml.h for documentation
-esp_err_t Veml7700::periodic_process(void) {
+void Veml7700::periodic_process(void) {
     // TODO: High level compensation
     // TODO: Gain/Integration auto-adjust
-    esp_err_t result = ESP_OK;
     uint16_t ambient_level = this->get_ambient_level();
     uint16_t white_level = this->get_white_level();
     float computed_lux = ambient_level * this->get_als_scale();
@@ -138,16 +137,11 @@ esp_err_t Veml7700::periodic_process(void) {
     this->last_output.raw_als = ambient_level;
     this->last_output.raw_white = white_level;
     this->last_output.lux = computed_lux;
-
-    return result;
 }
 
 // see veml.h for documentation
-esp_err_t Veml7700::get_outputs(veml_output_t *data) {
-    esp_err_t result = ESP_OK;
+void Veml7700::get_outputs(veml_output_t *data) {
     (void)memcpy(data, &this->last_output, sizeof(veml_output_t));
-
-    return result;
 }
 
 /*======================================================================

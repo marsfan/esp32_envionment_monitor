@@ -6,6 +6,7 @@
 #include "bsec.h"
 
 #include <esp_log.h>
+
 #include <cstring>
 
 #include "bsec/inc/bsec_interface.h"
@@ -13,7 +14,7 @@
 
 #define LOG_TAG "BSEC"
 
-#define CHECK_INPUT_REQUEST(x, shift) (x & (1 << (shift - 1)))
+#define CHECK_INPUT_REQUEST(x, shift) ((x) & (1 << ((shift)-1)))
 
 #define NUM_NON_SCAN_SENSORS 13
 
@@ -97,7 +98,7 @@ bsec_library_return_t BSEC::subscribe_all_non_scan(float sample_rate) {
 
         };
 
-    this->update_subscription(requested_sensors, NUM_NON_SCAN_SENSORS);
+    result = this->update_subscription(requested_sensors, NUM_NON_SCAN_SENSORS);
 
     return result;
 }
@@ -130,7 +131,7 @@ bsec_result_t BSEC::periodic_process(int64_t timestamp_ns) {
 
     // If requested, read data from the sensor and process it.
     if ((result.integer_result == 0) &&
-        this->sensor_settings.trigger_measurement &&
+        (this->sensor_settings.trigger_measurement != 0) &&
         (this->sensor_settings.op_mode != BME68X_SLEEP_MODE)) {
         bme68x_data data[3];
         (void)memset(data, 0, sizeof(bme68x_data));
@@ -165,7 +166,7 @@ int64_t BSEC::get_next_call_time(void) {
 
 // See bsec.h for documentation
 int64_t BSEC::get_next_call_time_us(void) {
-    return this->get_next_call_time() / 1000;
+    return this->get_next_call_time() / NS_IN_US;
 }
 
 int8_t BSEC::configure_sensor_forced(void) {

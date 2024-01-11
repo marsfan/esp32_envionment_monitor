@@ -21,6 +21,9 @@
 /// @brief Max number of times to retry connecting
 #define MAX_CONNECTION_RETRY 5
 
+///@brief Default max time to wait for time from NTP Server
+#define DEFAULT_NTP_TIME_WAIT 10000
+
 /* The event group allows multiple bits for each event, but we only care about
  * two events:
  * - we are connected to the AP with an IP
@@ -180,7 +183,7 @@ esp_err_t WiFiNetwork::connect_to_ap(const char* const ssid,
 
     // Wait for connect to pass/fail
     if (result == ESP_OK) {
-        EventBits_t bits = xEventGroupWaitBits(
+        const EventBits_t bits = xEventGroupWaitBits(
             this->wifi_event_group, WIFI_CONNECTED_BIT | WIFI_FAIL_BIT, pdFALSE,
             pdFALSE, portMAX_DELAY);
         if ((bits & WIFI_FAIL_BIT) != 0) {
@@ -209,7 +212,7 @@ esp_err_t WiFiNetwork::disconnect(void) {
 
 // See wifi_network.h for docs
 esp_err_t WiFiNetwork::update_time_from_network(void) {
-    return this->update_time_from_network(10000);
+    return this->update_time_from_network(DEFAULT_NTP_TIME_WAIT);
 }
 
 // See wifi_network.h for docs
@@ -244,7 +247,7 @@ void WiFiNetwork::wifi_event_handler(void* arg, int32_t event_id,
             }
             break;
         default:
-            ESP_LOGE(WIFI_LOG_TAG, "Unknown WiFi Event: %lu", event_id);
+            ESP_LOGE(WIFI_LOG_TAG, "Unknown WiFi Event: %ld", event_id);
             break;
     }
 }
@@ -275,7 +278,7 @@ void WiFiNetwork::ip_event_handler(void* arg, int32_t event_id,
             break;
         }
         default:
-            ESP_LOGE(WIFI_LOG_TAG, "Unknown IP Event: %lu", event_id);
+            ESP_LOGE(WIFI_LOG_TAG, "Unknown IP Event: %ld", event_id);
             break;
     }
 }

@@ -5,12 +5,14 @@
  */
 #include <esp_err.h>
 #include <esp_log.h>
+#include <sys/time.h>
 
 #include <cstdio>
 #include <cstring>
 
+#include "common.h"
+
 // Used for sensor interfacing.
-#include <sys/time.h>
 
 #include "bsec.h"
 #include "esp_timer.h"
@@ -23,9 +25,6 @@
 #include "private_config.h"
 #include "wifi_network.h"
 
-// Network Time
-#include "common.h"
-
 // MQTT stuff
 #include <mqtt_task.h>
 
@@ -36,6 +35,11 @@
 #define BSEC_TASK_NAME "bsec_task"
 #define VEML_TASK_NAME "veml_task"
 #define SENSOR_HUB_TASK_NAME "sensor_hub"
+
+/// @brief Time to wait between each iteration of the VEML task loop
+#define VEML_TASK_DELAY (500 / portTICK_PERIOD_MS)
+///@brief Sleep time between each iteration of main task loop
+#define MAIN_TASK_DELAY (5000 / portTICK_PERIOD_MS)
 
 // Priority of various tasks.
 // Higher number = Higher Priority
@@ -52,7 +56,7 @@
 #define SENSOR_TASK_STACK_SIZE 4096
 
 #define C_TO_F(celsius) \
-    ((celsius * 9 / 5) + 32)  /// Convert Celsius to Fahrenheit
+    (((celsius) * 9 / 5) + 32)  /// Convert Celsius to Fahrenheit
 
 // I2C Configuration
 #define I2C_MASTER_SDA_IO 32                     ///< I2C SDA Pin
@@ -63,7 +67,7 @@
 
 SafeI2C i2c(I2C_MASTER_PORT);
 Veml7700 veml(&i2c, I2C_TIMEOUT);
-BSEC bsec(&i2c, I2C_TIMEOUT, 0.0f);
+BSEC bsec(&i2c, I2C_TIMEOUT, 0.0F);
 WiFiNetwork wifi;
 MQTTClient mqtt(MQTT_BROKER_URI, MQTT_USERNAME, MQTT_PASSWORD);
 SensorHub sensor_hub;
@@ -111,7 +115,7 @@ static void bsec_task(void* taskParam) {
         int64_t remaining_time =
             bsec.get_next_call_time_us() - esp_timer_get_time();
         // TODO: Use xTaskDelayUntil instead?
-        vTaskDelay(remaining_time / 1000 / portTICK_PERIOD_MS);
+        vTaskDelay(remaining_time / US_IN_MS / portTICK_PERIOD_MS);
     }
 }
 
@@ -124,14 +128,14 @@ static void veml_task(void* taskParam) {
 
     while (true) {
         // Read the VEML sensor every half a second.
-        ESP_ERROR_CHECK(veml.periodic_process());
+        veml.periodic_process();
 
         // Send the data to the sensor hub task
         veml_output_t data;
         veml.get_outputs(&data);
         ESP_ERROR_CHECK(sensor_hub.send_veml(&data));
 
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        vTaskDelay(VEML_TASK_DELAY);
     }
 }
 
@@ -154,8 +158,8 @@ extern "C" void app_main(void) {
         .mode = I2C_MODE_MASTER,
         .sda_io_num = I2C_MASTER_SDA_IO,
         .scl_io_num = I2C_MASTER_SCL_IO,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .sda_pullup_en = true,
+        .scl_pullup_en = true,
         .master = {.clk_speed = I2C_MASTER_FREQ_HZ},
         .clk_flags = 0,  // optional; you can use I2C_SCLK_SRC_FLAG_* flags
                          // to choose i2c source clock here
@@ -252,6 +256,6 @@ extern "C" void app_main(void) {
         ESP_LOGI("app_main", "ALS: %d, White: %d, LUX: %f", data.veml.raw_als,
                  data.veml.raw_white, data.veml.lux);
         ESP_LOGI("app_main", "-----------------------------------");
-        vTaskDelay(5000 / portTICK_PERIOD_MS);
+        vTaskDelay(MAIN_TASK_DELAY);
     }
 }

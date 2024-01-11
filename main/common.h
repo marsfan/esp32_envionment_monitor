@@ -13,6 +13,9 @@
 
 // Max number of ticks to wait to get a mutex
 #define MAX_MUTEX_WAIT_TICKS (100 / portTICK_PERIOD_MS)
+#define S_IN_US 1000000
+#define US_IN_MS 1000
+#define NS_IN_US 1000
 
 #define LOGE_ON_ERROR(tag, func, msg, err)                                \
     if (err != ESP_OK) {                                                  \

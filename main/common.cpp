@@ -11,22 +11,22 @@
 
 // See common.h for docs
 int64_t get_epoch_time_s(void) {
-    return get_epoch_time_us() / 1000000;
+    return get_epoch_time_us() / S_IN_US;
 }
 
 // See common.h for docs
 int64_t get_epoch_time_ms(void) {
-    return get_epoch_time_us() / 1000;
+    return get_epoch_time_us() / US_IN_MS;
 }
 
 // See common.h for docs
 int64_t get_epoch_time_us(void) {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (tv.tv_sec * 1000000) + (tv.tv_usec);
+    struct timeval timeval = {.tv_sec = 0, .tv_usec = 0};
+    gettimeofday(&timeval, NULL);
+    return (timeval.tv_sec * S_IN_US) + (timeval.tv_usec);
 }
 
 // See common.h for docs
 int64_t get_epoch_time_ns(void) {
-    return get_epoch_time_us() * 1000;
+    return get_epoch_time_us() * NS_IN_US;
 }

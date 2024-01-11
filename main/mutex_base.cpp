@@ -12,6 +12,7 @@
 #include "common.h"
 
 MutexBase::MutexBase(void) {
+    this->wait_time = MAX_MUTEX_WAIT_TICKS;
     // TODO: Use static version?
     this->mutex = xSemaphoreCreateMutex();
     if (this->mutex == NULL) {

@@ -105,8 +105,11 @@ class Bme688 {
     /*!
      * @brief Get the remaining duration that can be used for heating.
      * @param[in] op_mode The operating mode of the sensor.
-     * @return Measurement duration in microseconds
+     * @return Measurement duration in microseconds, or a 0 if an error ocurred.
+     * @retval >0 Valid Measurement duration
+     * @retval 0 Either the measurement duration is 0, or an error ocurred
      * */
+    // FIXME: Better way to differentiate between duration or error
     uint32_t get_meas_duration(const uint8_t op_mode);
 
     /// @brief Get minimum delay period between parallel mode read_result

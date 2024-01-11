@@ -12,8 +12,17 @@
 #include <cstring>
 
 #include "bme68x_sensor_api/bme68x.h"
+#include "common.h"
 
 #define BME_LOG_TAG "BME688"
+
+// In C. All examples I can find set this to 25. IDK why. Datasheet
+// suggests we could also just read from the temp sensor, so IDK
+// why the library does not just do that.
+#define AMBIENT_TEMP 25
+
+/// @brief Maximum number of heater steps for the sensor.
+#define MAX_HEATER_STEPS 10U
 
 static void delay(uint32_t period_us, void* intf_ptr);
 
@@ -58,10 +67,7 @@ Bme688::Bme688(SafeI2C* i2c_bus, const TickType_t i2c_wait_time) {
     this->device.delay_us = delay;
     this->device.read = i2c_read;
     this->device.write = i2c_write;
-    this->device.amb_temp =
-        25;  // In C. All examples I can find set this to 25. IDK why. Datasheet
-             // suggests we could also just read from the temp sensor, so IDK
-             // why the library does not just do that.
+    this->device.amb_temp = AMBIENT_TEMP;
 
     this->device.intf_ptr = this;
 
@@ -99,17 +105,18 @@ int8_t Bme688::get_op_mode(uint8_t* op_mode) {
 uint32_t Bme688::get_meas_duration(const uint8_t op_mode) {
     struct bme68x_conf conf;
     int8_t result = BME68X_OK;
+    uint32_t duration = 0;
     result = this->get_conf(&conf);
     if (result == BME68X_OK) {
-        result = bme68x_get_meas_dur(op_mode, &conf, &this->device);
+        duration = bme68x_get_meas_dur(op_mode, &conf, &this->device);
     }
-    return result;
+    return duration;
 }
 
 // See bme688.h for documentation
 uint32_t Bme688::get_parallel_delay_period_us(void) {
     return this->get_meas_duration(BME68X_PARALLEL_MODE) +
-           this->heater_conf.shared_heatr_dur * 1000;
+           this->heater_conf.shared_heatr_dur * US_IN_MS;
 }
 
 // See bme688.h for documentation
@@ -164,7 +171,7 @@ int8_t Bme688::set_heater_conf_parallel(uint16_t* temp_profile,
                                         uint16_t* duration_profile,
                                         uint8_t num_steps) {
     int8_t result = BME68X_OK;
-    if (num_steps > 10) {
+    if (num_steps > MAX_HEATER_STEPS) {
         result = BME68X_E_INVALID_LENGTH;
         ESP_LOGE(BME_LOG_TAG,
                  "Heater profile has a max of 10 steps. Actual number: %d",
@@ -182,7 +189,7 @@ int8_t Bme688::set_heater_conf_parallel(uint16_t* temp_profile,
         // Not sure where the 140 comes from. I'm just copying it from the
         // parallel mode example.
         this->heater_conf.shared_heatr_dur =
-            (140 - (this->get_meas_duration(BME68X_PARALLEL_MODE)) / 1000);
+            (140 - (this->get_meas_duration(BME68X_PARALLEL_MODE)) / US_IN_MS);
 
         // Save the profile length.
         this->heater_conf.profile_len = num_steps;
@@ -209,7 +216,7 @@ int8_t Bme688::forced_measurement(struct bme68x_data* data, uint8_t* n_data) {
         // TODO: Put this before setting op mode?
         // Compute necessary delay period.
         uint32_t delay_period = this->get_meas_duration(BME68X_FORCED_MODE) +
-                                (this->heater_conf.heatr_dur * 1000);
+                                (this->heater_conf.heatr_dur * US_IN_MS);
         this->device.delay_us(delay_period, this->device.intf_ptr);
 
         // Read the data
@@ -254,7 +261,7 @@ int8_t Bme688::set_heater_conf(uint8_t op_mode) {
  * descriptors for callbacks
  * */
 static void delay(uint32_t period_us, void* intf_ptr) {
-    if (period_us < (portTICK_PERIOD_MS * 1000)) {
+    if (period_us < (portTICK_PERIOD_MS * US_IN_MS)) {
         // TODO: ESP_LOGV (verbose) message for if this is used?
         // TODO: should we enter a critical section here to ensure we don't
         // context switch?
@@ -281,15 +288,15 @@ static void delay(uint32_t period_us, void* intf_ptr) {
  */
 int8_t i2c_read(uint8_t reg_addr, uint8_t* reg_data, uint32_t length,
                 void* intf_pointer) {
-    int8_t result = ESP_FAIL;
-    if (intf_pointer) {
+    esp_err_t result = ESP_FAIL;
+    if (intf_pointer != NULL) {
         Bme688* device = (Bme688*)intf_pointer;
         result = device->get_i2c_bus()->master_write_read_device(
             BME68X_I2C_ADDR_HIGH, &reg_addr, 1, reg_data, length,
             device->get_i2c_wait_time());
     }
-
-    return result != ESP_OK;
+    // FIXME: Use correct return codes from BME68x library instead of just 1/0
+    return (result == ESP_OK) ? 0 : 1;
 }
 
 /*!
@@ -305,9 +312,9 @@ int8_t i2c_read(uint8_t reg_addr, uint8_t* reg_data, uint32_t length,
  */
 int8_t i2c_write(uint8_t reg_addr, const uint8_t* reg_data, uint32_t length,
                  void* intf_pointer) {
-    int8_t err = ESP_FAIL;
+    esp_err_t err = ESP_FAIL;
 
-    if (intf_pointer) {
+    if (intf_pointer != NULL) {
         Bme688* device = (Bme688*)intf_pointer;
 
         // Create new array of bytes to send that is 1 larger than the reg_data
@@ -325,5 +332,6 @@ int8_t i2c_write(uint8_t reg_addr, const uint8_t* reg_data, uint32_t length,
             BME68X_I2C_ADDR_HIGH, data, length + 1,
             device->get_i2c_wait_time());
     }
-    return err;
+    // FIXME: Use correct return codes from BME68x library instead of just 1/0
+    return (err == ESP_OK) ? 0 : 1;
 }
