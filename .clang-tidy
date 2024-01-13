@@ -1,1 +1,12 @@
-Checks: '*,-altera-*,-android-*,-llvmlibc-*,-modernize-redundant-void-arg,-modernize-use-trailing-return-type,-cppcoreguidelines-avoid-do-while,-cppcoreguidelines-pro-type-vararg,-hicpp-vararg,-google-readability-todo'
+Checks: '
+    *,
+    -altera-*,
+    -android-*,
+    -llvmlibc-*,
+    -modernize-redundant-void-arg,
+    -modernize-use-trailing-return-type,
+    -cppcoreguidelines-avoid-do-while,
+    -cppcoreguidelines-pro-type-vararg,
+    -hicpp-vararg,
+    -google-readability-todo,
+    -modernize-macro-to-enum'
