@@ -21,9 +21,6 @@
 // why the library does not just do that.
 #define AMBIENT_TEMP 25
 
-/// @brief Maximum number of heater steps for the sensor.
-#define MAX_HEATER_STEPS 10U
-
 static void delay(uint32_t period_us, void* intf_ptr);
 
 int8_t i2c_read(uint8_t reg_addr, uint8_t* reg_data, uint32_t length,
@@ -72,8 +69,8 @@ Bme688::Bme688(SafeI2C* i2c_bus, const TickType_t i2c_wait_time) {
     this->device.intf_ptr = this;
 
     (void)memset(&this->heater_conf, 0, sizeof(bme68x_heatr_conf));
-    this->heater_conf.heatr_dur_prof = this->heater_time_profile;
-    this->heater_conf.heatr_temp_prof = this->heater_temp_profile;
+    this->heater_conf.heatr_dur_prof = this->heater_time_profile.data();
+    this->heater_conf.heatr_temp_prof = this->heater_temp_profile.data();
 }
 
 // See bme688.h for documentation
