@@ -24,27 +24,6 @@
                  msg);                                                      \
     }
 
-typedef enum {
-    // Errors
-    BME_SELF_TEST_ERROR = BME68X_E_SELF_TEST,
-    BME_INVALID_LENGTH = BME68X_E_INVALID_LENGTH,
-    BME_DEVICE_NOT_FOUND = BME68X_E_DEV_NOT_FOUND,
-    BME_COM_FAIL = BME68X_E_COM_FAIL,
-    BME_NULL_PTR = BME68X_E_NULL_PTR,
-
-    // Ok
-    BME_OK = BME68X_OK,
-
-    // Warnings
-    BME_DEFINE_OP_MODE = BME68X_W_DEFINE_OP_MODE,
-    BME_NO_NEW_DATA = BME68X_W_NO_NEW_DATA,
-    BME_DEFINE_HEATER = BME68X_W_DEFINE_SHD_HEATR_DUR,
-
-    // Information
-    BME_PARAM_CORR = BME68X_I_PARAM_CORR,
-
-} bme_status_e;
-
 /// @brief Convert BME688 error codes to strings
 /// @param bme_err_code The error code to convert.
 /// @return String representation of the error code.
