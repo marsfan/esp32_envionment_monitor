@@ -212,8 +212,9 @@ int8_t Bme688::forced_measurement(struct bme68x_data* data, uint8_t* n_data) {
         // TODO: Support heater sequence as well?
         // TODO: Put this before setting op mode?
         // Compute necessary delay period.
-        uint32_t delay_period = this->get_meas_duration(BME68X_FORCED_MODE) +
-                                (this->heater_conf.heatr_dur * US_IN_MS);
+        const uint32_t delay_period =
+            this->get_meas_duration(BME68X_FORCED_MODE) +
+            (this->heater_conf.heatr_dur * US_IN_MS);
         this->device.delay_us(delay_period, this->device.intf_ptr);
 
         // Read the data
@@ -268,7 +269,7 @@ static void delay(uint32_t period_us, void* intf_ptr) {
         // NOPs to sleep
         esp_rom_delay_us(period_us);
     } else {
-        vTaskDelay(period_us / 1000 / portTICK_PERIOD_MS);
+        vTaskDelay(period_us / US_IN_MS / portTICK_PERIOD_MS);
     }
 }
 

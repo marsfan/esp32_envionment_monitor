@@ -14,7 +14,8 @@
         "i2c.h": "c",
         "semphr.h": "c",
         "limits": "cpp",
-        "type_traits": "cpp"
+        "type_traits": "cpp",
+        "array": "cpp"
     },
     "cSpell.words": [
         "bsec",

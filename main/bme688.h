@@ -8,6 +8,8 @@
 #ifndef BME688_H
 #define BME688_H
 
+#include <array>
+
 #include "bme68x_sensor_api/bme68x_defs.h"
 #include "safe_i2c.h"
 
@@ -23,6 +25,9 @@
         ESP_LOGE(tag, "Error | %s | %s | %s", func, BME_Err_To_String(err), \
                  msg);                                                      \
     }
+
+/// @brief Maximum number of heater steps for the sensor.
+#define MAX_HEATER_STEPS 10U
 
 /// @brief Convert BME688 error codes to strings
 /// @param bme_err_code The error code to convert.
@@ -233,10 +238,12 @@ class Bme688 {
     bme68x_heatr_conf heater_conf;
 
     /// @brief Temperature profile for sequence mode
-    uint16_t heater_temp_profile[10];
+    std::array<uint16_t, MAX_HEATER_STEPS> heater_temp_profile;
+    // uint16_t heater_temp_profile[10];
 
     /// @brief Time profile for sequence mode.
-    uint16_t heater_time_profile[10];
+    std::array<uint16_t, MAX_HEATER_STEPS> heater_time_profile;
+    // uint16_t heater_time_profile[10];
 
     /*!
      * @brief Send the class's heating configuration to the sensor.

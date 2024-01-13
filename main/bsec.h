@@ -8,6 +8,8 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#include <array>
+
 #include "bme688.h"
 #include "bsec/inc/bsec_datatypes.h"
 
@@ -153,7 +155,7 @@ class BSEC : private Bme688 {
     /// @brief Process the data and update internal record of most recent data
     /// @param data The data from the sensor to process
     /// @return Result of processing the data
-    bsec_library_return_t process_data(struct bme68x_data data);
+    bsec_library_return_t process_data(struct bme68x_data *data);
 
     /// @brief Conditionally add a value to the inputs array used for updating a
     /// subscription
@@ -162,14 +164,16 @@ class BSEC : private Bme688 {
     /// @param n_inputs Current number of inputs
     /// @param inputs The input array
     /// @return The new number of inputs
-    uint8_t add_sig_cond(const uint8_t input_signal, const float value,
-                         const uint8_t n_inputs, bsec_input_t *inputs);
+    uint8_t add_sig_cond(
+        const uint8_t input_signal, const float value, const uint8_t n_inputs,
+        std::array<bsec_input_t, BSEC_MAX_PHYSICAL_SENSOR> &inputs);
 
     /// @brief Update the outputs structure with newly read sensor data
     /// @param outputs The array of output data from the BSEC library
     /// @param num_outputs The number of entries in the output array
-    void update_output_structure(bsec_output_t *outputs,
-                                 const uint8_t num_outputs);
+    void update_output_structure(
+        std::array<bsec_output_t, BSEC_NUMBER_OUTPUTS> &outputs,
+        const uint8_t num_outputs);
 
     /// @brief Output data from BSEC
     bsec_structured_outputs_t outputs;

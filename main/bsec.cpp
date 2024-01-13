@@ -7,6 +7,7 @@
 
 #include <esp_log.h>
 
+#include <array>
 #include <cstring>
 
 #include "bsec/inc/bsec_interface.h"
@@ -142,7 +143,7 @@ bsec_result_t BSEC::periodic_process(int64_t timestamp_ns) {
             this->get_data(this->sensor_settings.op_mode, data, &n_data);
         if (result.integer_result == 0 && n_data > 0) {
             for (uint32_t i = 0; i < n_data; i++) {
-                result.bsec_result = this->process_data(data[i]);
+                result.bsec_result = this->process_data(&data[i]);
                 if (result.integer_result != 0) {
                     break;
                 }
@@ -170,7 +171,7 @@ int64_t BSEC::get_next_call_time_us(void) {
 }
 
 int8_t BSEC::configure_sensor_forced(void) {
-    int8_t result = BME_OK;
+    int8_t result = BME68X_OK;
     struct bme68x_conf conf;
     result = this->get_conf(&conf);
     BME_LOGE_ON_ERR(LOG_TAG, __func__, "Failed getting sensor configuration",
@@ -202,7 +203,7 @@ int8_t BSEC::configure_sensor_forced(void) {
 }
 
 int8_t BSEC::configure_sensor_parallel(void) {
-    int8_t result = BME_OK;
+    int8_t result = BME68X_OK;
     struct bme68x_conf conf;
     result = this->get_conf(&conf);
     BME_LOGE_ON_ERR(LOG_TAG, __func__, "Failed getting sensor configuration",
@@ -234,26 +235,32 @@ int8_t BSEC::configure_sensor_parallel(void) {
     return result;
 }
 
-bsec_library_return_t BSEC::process_data(struct bme68x_data data) {
+bsec_library_return_t BSEC::process_data(struct bme68x_data *data) {
     bsec_library_return_t result = BSEC_OK;
-    bsec_input_t inputs[BSEC_MAX_PHYSICAL_SENSOR];
+    std::array<bsec_input_t, BSEC_MAX_PHYSICAL_SENSOR> inputs;
+
     uint8_t n_inputs = 0;
-    (void)memset(inputs, 0, sizeof(bsec_input_t) * BSEC_MAX_PHYSICAL_SENSOR);
+    inputs.fill({
+        .time_stamp = 0,
+        .signal = 0,
+        .signal_dimensions = 0,
+        .sensor_id = 0,
+    });
 
     // Add pressure info if requested.
-    n_inputs = this->add_sig_cond(BSEC_INPUT_PRESSURE, data.pressure, n_inputs,
+    n_inputs = this->add_sig_cond(BSEC_INPUT_PRESSURE, data->pressure, n_inputs,
                                   inputs);
 
     // Add humidity info if requested
-    n_inputs = this->add_sig_cond(BSEC_INPUT_HUMIDITY, data.humidity, n_inputs,
+    n_inputs = this->add_sig_cond(BSEC_INPUT_HUMIDITY, data->humidity, n_inputs,
                                   inputs);
 
     // Add temp info if requested
-    n_inputs = this->add_sig_cond(BSEC_INPUT_TEMPERATURE, data.temperature,
+    n_inputs = this->add_sig_cond(BSEC_INPUT_TEMPERATURE, data->temperature,
                                   n_inputs, inputs);
 
     // Add gas resistance if requested
-    n_inputs = this->add_sig_cond(BSEC_INPUT_GASRESISTOR, data.gas_resistance,
+    n_inputs = this->add_sig_cond(BSEC_INPUT_GASRESISTOR, data->gas_resistance,
                                   n_inputs, inputs);
 
     // Add temp offset if requested
@@ -266,16 +273,23 @@ bsec_library_return_t BSEC::process_data(struct bme68x_data data) {
     n_inputs = this->add_sig_cond(
         BSEC_INPUT_PROFILE_PART,
         (this->sensor_settings.op_mode == BME68X_FORCED_MODE) ? 0
-                                                              : data.gas_index,
+                                                              : data->gas_index,
         n_inputs, inputs);
 
     if (n_inputs > 0) {
         /// Set the num outputs to the max we have memory to support.
         // See 3.3.1.4 in the integration guide
-        bsec_output_t outputs[BSEC_NUMBER_OUTPUTS];
+        // FIXME: COuld probably use std::vec instead?
+        std::array<bsec_output_t, BSEC_NUMBER_OUTPUTS> outputs;
+        outputs.fill({.time_stamp = 0,
+                      .signal = 0,
+                      .signal_dimensions = 0,
+                      .sensor_id = 0,
+                      .accuracy = 0});
+
         uint8_t num_outputs = BSEC_NUMBER_OUTPUTS;
-        (void)memset(outputs, 0, sizeof(outputs));
-        result = bsec_do_steps(inputs, n_inputs, outputs, &num_outputs);
+        result = bsec_do_steps(inputs.data(), n_inputs, outputs.data(),
+                               &num_outputs);
 
         // Update output data structure.
         this->update_output_structure(outputs, num_outputs);
@@ -285,8 +299,9 @@ bsec_library_return_t BSEC::process_data(struct bme68x_data data) {
 }
 
 // See bsec.h for documentation
-uint8_t BSEC::add_sig_cond(const uint8_t input_signal, const float value,
-                           const uint8_t n_inputs, bsec_input_t *inputs) {
+uint8_t BSEC::add_sig_cond(
+    const uint8_t input_signal, const float value, const uint8_t n_inputs,
+    std::array<bsec_input_t, BSEC_MAX_PHYSICAL_SENSOR> &inputs) {
     if (CHECK_INPUT_REQUEST(this->sensor_settings.process_data, input_signal)) {
         inputs[n_inputs].sensor_id = input_signal;
         inputs[n_inputs].signal = value;
@@ -297,8 +312,9 @@ uint8_t BSEC::add_sig_cond(const uint8_t input_signal, const float value,
 }
 
 // See bsec.h for documentation
-void BSEC::update_output_structure(bsec_output_t *outputs,
-                                   const uint8_t num_outputs) {
+void BSEC::update_output_structure(
+    std::array<bsec_output_t, BSEC_NUMBER_OUTPUTS> &outputs,
+    const uint8_t num_outputs) {
     for (int i = 0; i < num_outputs; i++) {
         bsec_output_t output = outputs[i];
         bsec_virtual_sensor_data_t *data = NULL;
