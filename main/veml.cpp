@@ -156,7 +156,7 @@ esp_err_t Veml7700::write_to_reg(const uint8_t reg,
     // Second and third bytes are the data bytes.
     const uint8_t data_high = (*data & 0xF0) >> 8;
     const uint8_t data_low = *data * 0x0F;
-    const std::array<uint8_t, 3> data_buffer = {reg, data_high, data_low};
+    const std::array<uint8_t, 3> data_buffer = {reg, data_low, data_high};
     return this->i2c_bus->master_write_to_device(VEML_ADDR, data_buffer.data(),
                                                  3, this->wait_time);
 }
