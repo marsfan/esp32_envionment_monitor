@@ -223,10 +223,10 @@ extern "C" void app_main(void) {
                  data.bsec.compensated_humidity.accuracy,
                  data.bsec.compensated_humidity.valid);
         ESP_LOGI("app_main", "Pressure: %f, Acc: %d, valid: %d",
-                 C_TO_F(data.bsec.raw_pressure.signal),
-                 data.bsec.raw_pressure.accuracy, data.bsec.raw_pressure.valid);
+                 data.bsec.raw_pressure.signal, data.bsec.raw_pressure.accuracy,
+                 data.bsec.raw_pressure.valid);
         ESP_LOGI("app_main", "Raw Gas: %f, Acc: %d, valid: %d",
-                 C_TO_F(data.bsec.raw_gas.signal), data.bsec.raw_gas.accuracy,
+                 data.bsec.raw_gas.signal, data.bsec.raw_gas.accuracy,
                  data.bsec.raw_gas.valid);
         ESP_LOGI("app_main", "IAQ: %f, Acc: %d, valid: %d",
                  data.bsec.iaq.signal, data.bsec.iaq.accuracy,
